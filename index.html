@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nicole Dai's island portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --leaf:#8A8F4A; --leaf-deep:#6E7440; --sand:#F7EEDF; --bark:#3A2F45; --bark-dark:#221D33;
+  --sky:#221D33; --paper:#F7EEDF; --ink:#2A2230; --muted:#6E6474; --sun:#E86F5A; --peach:#E8A48C;
+  --todo-bg:#FBE9E2; --chip:#EFE6D8;
+  --display:"Fraunces",Georgia,"Times New Roman",serif;
+  --body:"Fraunces",Georgia,"Times New Roman",serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#27302A; --ink:#EFE9DA; --muted:#B9C0AE; --leaf-deep:#A9D38F; --todo-bg:#3B3128; --chip:#334036;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#27302A; --ink:#EFE9DA; --muted:#B9C0AE; --leaf-deep:#A9D38F; --todo-bg:#3B3128; --chip:#334036;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0;overflow:hidden}
+body{background:var(--sky);font-family:var(--body);color:var(--ink);-webkit-font-smoothing:antialiased}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+
+/* labels over places */
+#labels{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.label{position:absolute;transform:translate(-50%,-100%);font-family:var(--display);font-weight:600;font-size:13px;
+  color:var(--bark-dark);background:#FFFBF1;border:2px solid var(--bark);border-radius:10px;padding:2px 9px;white-space:nowrap;
+  box-shadow:0 2px 0 var(--bark);transition:opacity .2s}
+.label.found{background:#E6F2DA}
+.label.found::before{content:"✓ ";color:var(--leaf)}
+
+/* HUD */
+.hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+  padding:calc(12px + env(safe-area-inset-top,0px)) 12px 0;pointer-events:none}
+.hud>*{pointer-events:auto}
+.badge{background:var(--bark);color:var(--sand);border-radius:16px;padding:8px 14px 10px;box-shadow:0 3px 0 var(--bark-dark)}
+.badge .name{font-family:var(--display);font-weight:700;font-size:1.15rem;display:block;line-height:1.2}
+.badge .found{font-size:.82rem;opacity:.9}
+.dots{display:flex;gap:5px;margin-top:6px}
+.dot{width:11px;height:11px;border-radius:50%;border:2px solid var(--sand);background:transparent}
+.dot.on{background:var(--sun);border-color:var(--sun)}
+.hud-actions{display:flex;gap:8px}
+.btn{font-family:var(--display);font-weight:600;font-size:.95rem;color:var(--bark-dark);background:#FFFBF1;
+  border:2.5px solid var(--bark);border-radius:999px;padding:8px 16px;cursor:pointer;box-shadow:0 3px 0 var(--bark);
+  transition:transform .08s, box-shadow .08s}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--bark)}
+.btn.primary{background:var(--sun)}
+.btn.round{width:42px;padding:8px 0;text-align:center}
+:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
+
+/* prompt */
+.prompt-wrap{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;
+  padding:0 12px calc(22px + env(safe-area-inset-bottom,0px));pointer-events:none}
+.prompt{pointer-events:auto;font-size:1.05rem;padding:11px 20px}
+.prompt kbd{font-family:var(--display);font-size:.8rem;background:var(--bark);color:var(--sand);border-radius:6px;padding:1px 7px;margin-left:8px}
+.hint{position:fixed;left:0;right:0;bottom:0;text-align:center;padding:0 12px calc(26px + env(safe-area-inset-bottom,0px));
+  font-weight:700;color:#F7EEDF;text-shadow:0 1px 0 rgba(255,255,255,.7);font-size:.9rem;pointer-events:none;transition:opacity .4s}
+
+.toast{position:fixed;left:50%;top:calc(96px + env(safe-area-inset-top,0px));transform:translate(-50%,-10px);opacity:0;
+  background:var(--leaf-deep);color:#fff;font-family:var(--display);font-weight:600;padding:9px 18px;border-radius:999px;
+  transition:opacity .3s, transform .3s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .toast{color:#1E2A1A} }
+
+/* card */
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  padding:calc(16px + env(safe-area-inset-top,0px)) 14px calc(16px + env(safe-area-inset-bottom,0px));
+  background:rgba(40,60,50,.35)}
+.overlay[hidden]{display:none}
+.card{width:100%;max-width:640px;max-height:100%;display:flex;flex-direction:column;background:var(--paper);
+  border:3px solid var(--bark);border-radius:22px;box-shadow:0 6px 0 var(--bark-dark);overflow:hidden;
+  animation:pop .22s ease-out}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion: reduce){.card{animation:none}.btn{transition:none}}
+.sign{background:var(--bark);color:var(--sand);padding:16px 20px 14px;display:flex;align-items:flex-start;gap:12px;
+  background-image:repeating-linear-gradient(0deg,transparent 0 13px,rgba(0,0,0,.06) 13px 15px)}
+.sign-text{flex:1;min-width:0}
+.sign h2{font-family:var(--display);font-weight:700;font-size:1.65rem;line-height:1.15;margin:0}
+.sign .kicker{margin:4px 0 0;font-size:.92rem;opacity:.92}
+.sign .btn{flex-shrink:0;font-size:.85rem;padding:6px 14px}
+.card-body{padding:18px 22px 24px;overflow-y:auto;line-height:1.6}
+.card-body h3{font-family:var(--display);font-weight:600;font-size:1.08rem;color:var(--leaf-deep);margin:18px 0 6px}
+.card-body h3:first-child{margin-top:4px}
+.card-body p{margin:0 0 10px;max-width:68ch}
+.card-body ul{margin:0 0 10px;padding-left:1.2em}
+.card-body li{margin-bottom:5px}
+.card-body a{color:var(--leaf-deep);font-weight:700}
+.role{font-weight:700;color:var(--muted);font-size:.95rem}
+.todo{border:2px dashed var(--peach);background:var(--todo-bg);border-radius:12px;padding:9px 12px;font-size:.93rem}
+.todo strong{color:#B8603F}
+.tablewrap{overflow-x:auto;margin:6px 0 4px;border:2px solid var(--bark);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:420px}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid rgba(122,82,54,.25)}
+th{font-family:var(--display);font-weight:600;background:rgba(122,82,54,.1)}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.caption{font-size:.82rem;color:var(--muted);margin:4px 0 10px}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0 12px}
+.node{border:2px solid var(--bark);border-radius:12px;padding:6px 12px;font-weight:700;font-size:.9rem;background:var(--chip)}
+.arrow{font-weight:700;color:var(--bark)}
+.weeks{list-style:none;padding:0!important;display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:8px;margin:8px 0 6px!important}
+.weeks li{border:2px solid var(--bark);border-radius:12px;padding:7px 9px;font-size:.85rem;background:var(--chip);margin:0}
+.weeks b{display:block;font-family:var(--display);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+.chip{background:var(--chip);border:1.5px solid rgba(122,82,54,.45);border-radius:999px;padding:3px 11px;font-size:.88rem;font-weight:600}
+.controls{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:8px 0 16px;font-size:.95rem}
+.controls dt{font-weight:700}
+.controls dd{margin:0}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.qv{border-top:2px dashed rgba(122,82,54,.4);padding-top:14px;margin-top:18px}
+.qv:first-child{border-top:none;margin-top:0;padding-top:0}
+.qv-title{font-family:var(--display);font-weight:700;font-size:1.3rem;margin:0 0 2px;color:var(--ink)}
+.loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--display);
+  font-size:1.2rem;color:var(--bark-dark);background:var(--sky)}
+/* film grain and soft vignette */
+#grain{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(24,18,48,.42) 100%)}
+#grain::after{content:"";position:absolute;inset:0;opacity:.08;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+.portrait{float:right;width:130px;height:173px;object-fit:cover;border-radius:16px;border:3px solid var(--bark);margin:0 0 10px 14px}
+</style>
+</head>
+<body>
+<canvas id="c" tabindex="0" aria-label="Nicole's island. Use the arrow keys or WASD to walk, and E to open a place. The Quick view button shows everything as a page."></canvas>
+<div id="grain" aria-hidden="true"></div>
+<div id="labels" aria-hidden="true"></div>
+
+<header class="hud">
+  <div class="badge">
+    <span class="name">Nicole's Island</span>
+    <span class="found" id="foundText">0 of 7 places found</span>
+    <div class="dots" id="dots"></div>
+  </div>
+  <div class="hud-actions">
+    <button class="btn" id="quickBtn">Quick view</button>
+    <button class="btn round" id="helpBtn" aria-label="How to play">?</button>
+  </div>
+</header>
+
+<div class="hint" id="hint">Walk up to a building to visit it</div>
+<div class="prompt-wrap"><button class="btn primary prompt" id="prompt" hidden>Visit <span id="promptName"></span><kbd>E</kbd></button></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="cardTitle">
+    <div class="sign">
+      <div class="sign-text">
+        <h2 id="cardTitle"></h2>
+        <p class="kicker" id="cardKicker"></p>
+      </div>
+      <button class="btn" id="closeBtn">Close</button>
+    </div>
+    <div class="card-body" id="cardBody"></div>
+  </div>
+</div>
+
+<div class="loading" id="loading">Building the island…</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script>
+(function(){
+/* ============ CONTENT (edit this part to update the portfolio) ============ */
+const todo = t => `<p class="todo"><strong>To add:</strong> ${t}</p>`;
+
+const CONTENT = {
+  home: {
+    title: "Nicole's Home",
+    kicker: "About me",
+    html: `
+      <h3>Hi, I'm Nicole!</h3>
+          <img class="portrait" src="nicole.jpg" alt="Photo of me!">
+      <p>I'm a UC Riverside business graduate from Southern California who loves turning messy processes into clear ones: pulling the data together, setting up the system, and keeping everyone on the same page. Across Pop Mart, UCR ITS, and Alchemy Insurance, I've coordinated 21 teams, tracked 1,000+ tickets, and kept outreach on track for 500+ properties.</p>
+      <p>I'm looking for roles in operations, project management, and information systems.</p>
+      <h3>Background</h3>
+      <ul>
+        <li>B.S. in Business Administration, concentration in Information Systems, University of California, Riverside (2026)</li>
+        <li>Coursework in IT management, electronic commerce, and business data communications</li>
+        <li>Conversational in Mandarin and Cantonese</li>
+      </ul>
+      <h3>Off the clock</h3>
+      <p>You'll usually find me hiking to a lake or waterfall, lifting, golfing, playing piano and viola, rearranging a room for fun, or doing nail sets. I also love live music and going to music festivals. I'm a lifelong Pop Mart fan (Hirono and Crybaby are my favorites), and I film all my unboxings.</p>
+      <p><strong>Currently reading:</strong> <em>The Invisible Life of Addie LaRue</em> by V.E. Schwab</p>
+      <h3>Look closer</h3>
+      <p>Little pieces of me are hidden all over this island. Climb up to the waterfall lookout for my love of hiking, and you'll find a piano and viola waiting there. There's a reading nook by the lake with the book I'm reading now, a festival stage with string lights for my love of live music, and a golf green for my weekend spot. The bear at the RoboShop is holding a gift box for my unboxing videos, and the moody blossoms and glowing lanterns come from the night photos I love taking.</p>
+      <h3>Giving back</h3>
+      <p>In high school I started our Care Mission chapter, wrote its constitution, and ran 20+ events with the board. We baked cookies every week for 500+ people on Skid Row, held 4 food drives, and made 100+ masks a week for healthcare workers early in the COVID-19 pandemic.</p>`
+  },
+shop: {
+    title: "RoboShop",
+    kicker: "Pop Mart US, Culver City, Los Angeles",
+    html: `
+      <p class="role">RoboShop Operations Front-End Intern, March to June 2026</p>
+      <p>I helped run operations for Pop Mart's RoboShop vending machines. My main focus was managing my RoboShop teams and providing them with any assistance they needed. A big part of my role was giving my teams suggestions on how to improve their sales performance by providing them restocking data, then using that data to make real decisions.</p>
+      <h3>The problem</h3>
+      <p>Coordinators didn't have enough data to tell whether teams were restocking efficiently, which made it hard to give stores clear, backed-up recommendations.</p>
+      <h3>Building the restock data</h3>
+      <ul>
+        <li>Built a restock duration table with the backend team.</li>
+        <li>Trained operations and store teams to use it.</li>
+        <li>Standardized the data so coordinators could use it to guide their teams.</li>
+      </ul>
+      <h3>Case study: Is a second machine worth it?</h3>
+      <p>Some stores run two RoboShop machines. Across 8 of these locations, I calculated month-over-month sales trends and performance metrics for each machine. Then I used average restock times to estimate the labor cost each second machine adds to a store's operations.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Location</th><th class="num">MoM sales trend</th><th class="num">Avg. restock (min)</th><th class="num">Added labor cost / mo</th><th>Second machine?</th></tr></thead>
+        <tbody>
+          <tr><td>Store A</td><td class="num">+12%</td><td class="num">18</td><td class="num">$840</td><td>Keep</td></tr>
+          <tr><td>Store B</td><td class="num">+2%</td><td class="num">26</td><td class="num">$1,060</td><td>Review</td></tr>
+          <tr><td>Store C</td><td class="num">-8%</td><td class="num">31</td><td class="num">$960</td><td>One machine is enough</td></tr>
+        </tbody>
+      </table></div>
+      <p class="caption">Sample numbers for illustration only. Actual data is confidential.</p>
+      <p><strong>Result:</strong> I flagged 3 of the 8 locations where one machine could handle customer traffic on its own, so second machines stay only where sales justify the extra restocking time.</p>
+      <h3>Case study: Getting contractors to restock daily</h3>
+      <p>Some third-party contractors pushed back on daily restocking, saying rising gas prices put it outside their scope. I pulled data from multiple locations, compared strong and weak restock weeks, and analyzed the sales gained against the labor cost of meeting the requirement.</p>
+      <p><strong>Result:</strong> After I presented my analysis, the contractors agreed to restock daily.</p>
+      <h3>Day to day</h3>
+      <p>I managed 21 teams: 17 store teams and 4 contractors.</p>
+      <ul>
+        <li>Shared data reports and trained store managers on biweekly calls.</li>
+        <li>Supported stores with visual merchandising and inventory, through site visits and check-in calls.</li>
+        <li>Replaced an unresponsive contractor, interviewed new ones, wrote SOPs, and handled handovers and payroll.</li>
+        <li>Restocked and took inventory at the Culver City machine.</li>
+        <li>Worked with the backend team to streamline processes, and with mall management on site needs.</li>
+      </ul>`
+  },
+  install: {
+    title: "Install Site",
+    kicker: "Pop Mart US: RoboShop installations",
+    html: `
+      <p class="role">RoboShop Operations Front-End Intern, March to June 2026</p>
+      <h3>The projects</h3>
+      <p>I helped launch two new RoboShop machines: one at Katy Mills in Texas and one at USC in California.</p>
+      <h3>What I did</h3>
+      <ul>
+        <li>Coordinated vendors for trucking, graphics, and glass.</li>
+        <li>Handled after-hours work permits and communication with mall management.</li>
+        <li>Reviewed site specs and design mockups for the USC install.</li>
+        <li>Helped on-site staff troubleshoot the machine remotely after launch.</li>
+      </ul>
+      <h3>The challenges</h3>
+      <p>On both projects, we found out on installation day that some vendors hadn't finished their part. At Katy Mills, the opening was delayed when a delivery vendor didn't pick up the merchandise, even after I'd sent several emails spelling out what they needed to collect. At USC, delays came from communication gaps and missing information we needed to find the right vendors.</p>
+      <h3>What I recommended</h3>
+      <ul>
+        <li>Photo proof from vendors at each step, so everyone can confirm work is done and up to standard.</li>
+        <li>A list of verified vendors the team can rely on.</li>
+        <li>A standard operating procedure (SOP) so everyone knows what's coming on future installs.</li>
+        <li>A shared project tracker so management can see progress on every project in one place.</li>
+      </ul>`
+  },
+  install: {
+    title: "Install Site",
+    kicker: "Pop Mart US: RoboShop installations",
+    html: `
+      <p class="role">RoboShop Operations Front-End Intern, March to June 2026</p>
+      <h3>The projects</h3>
+      <p>I helped launch two new RoboShop machines: one at Katy Mills in Texas and one at USC in California.</p>
+      <h3>What I did</h3>
+      <ul>
+        <li>Coordinated vendors for trucking, graphics, and glass.</li>
+        <li>Handled after-hours work permits and communication with mall management.</li>
+        <li>Reviewed site specs and design mockups for the USC install.</li>
+        <li>Helped on-site staff troubleshoot the machine remotely after launch.</li>
+      </ul>
+      <h3>The challenges</h3>
+      <p>On both projects, we found out on installation day that some vendors hadn't finished their part. At Katy Mills, the opening was delayed when a delivery vendor didn't pick up the merchandise, even after I'd sent several emails spelling out what they needed to collect. At USC, delays came from communication gaps and missing information we needed to find the right vendors.</p>
+      <h3>What I recommended</h3>
+      <ul>
+        <li>Photo proof from vendors at each step, so everyone can confirm work is done and up to standard.</li>
+        <li>A list of verified vendors the team can rely on.</li>
+        <li>A standard operating procedure (SOP) so everyone knows what's coming on future installs.</li>
+        <li>A shared project tracker so management can see progress on every project in one place.</li>
+      </ul>`
+  },
+  lab: {
+    title: "Ticket Tower",
+    kicker: "UCR Information Technology Solutions",
+    html: `
+      <p class="role">Project Management Student Analyst, June 2024 to May 2025</p>
+      <p>I supported UCR's IT department on two big projects: testing a new admissions system before launch, and moving every team's projects onto a new project management platform. I also planned our team's two-day retreat, which you can find in the Retreat Garden next door.</p>
+      <h3>Case study: Testing a system before launch</h3>
+      <p>UC was launching a new Residency Determination system for college applicants, and it needed to work before high school seniors started applying. I ran user acceptance testing on 8 test cases, each with 100+ rows in Excel, across 4 rounds of testing.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Type of issue</th><th>What I found</th></tr></thead>
+        <tbody>
+          <tr><td>Inconsistent wording</td><td>The same information was written differently in different places</td></tr>
+          <tr><td>Broken dropdowns</td><td>Some menu options couldn't be clicked</td></tr>
+          <tr><td>Wrong pages</td><td>Some options didn't open the page they said they would</td></tr>
+        </tbody>
+      </table></div>
+      <p>I documented every issue and sent it to the testing team so they could fix and recheck it in each round.</p>
+      <p><strong>Result:</strong> The system launched on schedule, in time for that year's high school seniors applying to college.</p>
+      <h3>Case study: Moving every team to a new platform</h3>
+      <p>As part of a university-wide mandate, alongside the switch from Microsoft Office to Google Workspace, ITS moved its project tracking from ServiceNow to Adobe Workfront. Our department was responsible for moving projects for every department on campus, and it was a weekly task for my entire year there.</p>
+      <div class="flow" role="img" aria-label="ServiceNow, then checking what had moved across 5 or more departments, then linking the paper trail, then Adobe Workfront">
+        <span class="node">ServiceNow</span><span class="arrow" aria-hidden="true">➜</span>
+        <span class="node">Check what's moved</span><span class="arrow" aria-hidden="true">➜</span>
+        <span class="node">Link the paper trail</span><span class="arrow" aria-hidden="true">➜</span>
+        <span class="node">Adobe Workfront</span>
+      </div>
+      <ul>
+        <li>Worked with 5+ departments to track which projects had moved and which hadn't.</li>
+        <li>Created and transferred paper trails that linked ServiceNow records to their new home in Workfront.</li>
+        <li>Used those links to follow up on missing tickets and incidents, like people who needed help with their online portal or school websites.</li>
+      </ul>
+      <p><strong>Result:</strong> Over the year, I tracked 1,000+ tickets and 10+ projects through the move.</p>
+      <h3>Day to day</h3>
+      <ul>
+        <li>Sent weekly progress emails to other department heads on behalf of our team.</li>
+        <li>Tracked repairs for the campus security cameras and made sure they were updated in the system.</li>
+        <li>Interviewed candidates for a team within ITS.</li>
+        <li>Created and updated 6 documents, including SOPs, so future student employees have something to reference.</li>
+      </ul>`
+  },
+ retreat: {
+    title: "Retreat Garden",
+    kicker: "UCR ITS: planning a two-day team retreat",
+    html: `
+      <p class="role">Project Management Student Analyst, June 2024 to May 2025</p>
+      <h3>The project</h3>
+      <p>Our department worked remotely, with some teammates living out of state, so I planned a two-day retreat to bring everyone together in person. I planned it over 6 weeks and handled everything from booking to the final dinner reservation.</p>
+      <h3>The plan</h3>
+      <ol class="weeks">
+        <li><b>Day 1</b>Five presentations from five department heads on how to improve the team, with icebreakers in between and a white elephant gift exchange to close the day</li>
+        <li><b>Day 2</b>A team walk through the UCR Botanic Gardens with more icebreakers, then mini golf and a Korean BBQ dinner</li>
+      </ol>
+      <h3>What I did</h3>
+      <ul>
+        <li>Booked the room and got the university's approval to use the projector and serve food on site.</li>
+        <li>Planned the icebreakers and activities to keep both days engaging.</li>
+        <li>Wrote the itinerary and emailed it to every department.</li>
+        <li>Since teammates were flying in, included hotel suggestions and campus parking directions so everyone could get to each location on time.</li>
+        <li>Booked the evening activities and dinner reservation.</li>
+        <li>Stayed within budget, with money left over.</li>
+      </ul>
+      <h3>The challenge</h3>
+      <p>Right before the event, our room booking was changed without notice. I let my managers know right away and called HUB Room Bookings to find out why it changed and how to get the original room back. When they couldn't give me an answer, I found another room nearby, checked the plan with my manager, and sent a follow-up email to all attendees with the new location.</p>
+      <p><strong>Result:</strong> Brought 25 teammates together in person for two days, including teammates who flew in from out of state. People thanked me for planning it, and my manager is making it an annual event.</p>`
+  },
+  office: {
+    title: "Coverage Corner",
+    kicker: "Alchemy Insurance Solutions (remote)",
+    html: `
+      <p class="role">Client Management Intern, October 2025 to March 2026</p>
+      <p>Alchemy provides storage and tenant insurance for landlords. I worked remotely from California on East Coast hours, starting early each morning to match the team's schedule.</p>
+      <ol class="weeks">
+        <li><b>500+</b>properties</li>
+        <li><b>120</b>landlord clients</li>
+        <li><b>10</b>CRM reports a day</li>
+        <li><b>7–15</b>weekly outreach goal per teammate</li>
+      </ol>
+      <h3>Case study: Daily reports that kept outreach on track</h3>
+      <p>With hundreds of properties to manage, the team needed a clear view of who had been contacted and who needed attention. I built 10 CRM reports a day to give them that view.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>What the reports showed</th><th>How the team used it</th></tr></thead>
+        <tbody>
+          <tr><td>Which clients and properties had been contacted, and which hadn't</td><td>Followed up on the right clients, including upcoming renewals</td></tr>
+          <tr><td>Each teammate's outreach progress</td><td>Tracked whether everyone was reaching their weekly goal of 7–15 new clients</td></tr>
+        </tbody>
+      </table></div>
+      <p><strong>Result:</strong> The reports made the team's workflow smoother, and leadership shared feedback that we were exceeding our goals.</p>
+      <h3>Case study: Checking state requirements</h3>
+      <p>Insurance rules differ from state to state. I contacted each state to confirm its specific requirements, then let my team know which policies needed to be corrected or updated.</p>
+      <h3>Day to day</h3>
+      <ul>
+        <li>Used ISI to review client policies and answer coverage questions.</li>
+        <li>Kept 20+ client contacts a day synced in the CRM so follow-ups didn't slip.</li>
+        <li>Supported teammates behind the scenes with their specific clients' needs.</li>
+      </ul>`
+  },
+ school: {
+    title: "Club Room",
+    kicker: "Highlander Business Society",
+    html: `
+      <p>Highlander Business Society is an on campus business club at UC Riverside. I started as Vice President of Education, running our intern program, and a year later became Co-President of the club.</p>
+      <h3>Co-President</h3>
+      <p class="role">January 2026 to June 2026</p>
+      <ol class="weeks">
+         <li><b>50+</b>members</li>
+        <li><b>10+</b>person executive board</li>
+        <li><b>10</b>new members</li>
+        <li><b>4+</b>events led</li>
+        <li><b>400+</b>total attendees</li>
+        <li><b>2+</b>new club partnerships</li>
+      </ol>
+      <ul>
+        <li>Co-led weekly executive board meetings to plan our next steps, including upcoming events and new collaborations.</li>
+        <li>Ran weekly member meetings covering that week's events and what the board was planning for the month.</li>
+        <li>Scheduled club meetings and booked rooms for every on-campus club event.</li>
+        <li>Supported executive board members with questions outside of meetings.</li>
+        <li>Worked with the university to partner with like-minded organizations on campus.</li>
+        <li>Served as the face of the organization.</li>
+      </ul>
+      <h3>Vice President of Education</h3>
+      <p class="role">January 2025 to June 2025</p>
+      <p>I designed and ran a 6-week program to help new interns grow personally and professionally.</p>
+      <h3>What interns learned</h3>
+      <ul>
+        <li>Mock interviews with randomized questions tailored to each intern's career path and concentration.</li>
+        <li>Writing professional emails, including thank-you notes and coffee chat requests.</li>
+        <li>Using LinkedIn to build their network.</li>
+        <li>Applying to 10 internships each, as part of the program.</li>
+        <li>Soft skills like collaboration, teamwork, and stepping outside their comfort zone.</li>
+      </ul>
+      <h3>How I ran it</h3>
+      <ul>
+        <li>Led 7 program meetings focused on public speaking and presenting.</li>
+        <li>Matched and managed 12 mentor and mentee pairs, with mentors guiding their mentees through professional questions.</li>
+      </ul>
+      <p><strong>Result:</strong> 11 interns completed the program.</p>`
+  },
+  board: {
+    title: "Bulletin Board",
+    kicker: "Skills, tools, and how this island was made",
+    html: `
+      <h3>Operations and project management</h3>
+      <div class="chips"><span class="chip">User acceptance testing</span><span class="chip">SOPs and documentation</span><span class="chip">Vendor and contractor coordination</span><span class="chip">Event planning</span><span class="chip">Data analysis and reporting</span><span class="chip">KPI tracking</span><span class="chip">Cross-functional communication</span></div>
+      <h3>Tools</h3>
+      <div class="chips"><span class="chip">Adobe Workfront</span><span class="chip">ServiceNow</span><span class="chip">CRM systems</span><span class="chip">ISI</span><span class="chip">Microsoft Excel and Office</span><span class="chip">Google Workspace</span><span class="chip">Lark</span><span class="chip">Slack</span><span class="chip">Trello</span><span class="chip">CapCut</span></div>
+      <h3>How I work</h3>
+      <div class="chips"><span class="chip">Teamwork</span><span class="chip">Leadership</span><span class="chip">Customer service</span><span class="chip">Communication</span><span class="chip">Critical thinking</span><span class="chip">Creativity</span></div>
+      <h3>Languages</h3>
+      <div class="chips"><span class="chip">English</span><span class="chip">Mandarin (conversational)</span><span class="chip">Cantonese (conversational)</span></div>
+      <h3>Pinned note: How I built this island</h3>
+      <p>I ran this portfolio like a real project. I wrote a project charter, tracked every task on a Trello board, and kept a build log of what I changed and learned along the way.</p>
+      <ul>
+        <li><strong>Built with:</strong> HTML, CSS, JavaScript, and Three.js, edited in VS Code, with an AI coding assistant as a partner.</li>
+        <li><strong>Designed by me:</strong> the night-blossom look, every building, and the little details, inspired by my own photos and references I collected.</li>
+        <li><strong>Problems I solved:</strong> a missing bracket that broke the whole page's styling, an if statement that stacked every tree in the middle of the island, and code pasted in the wrong place that crashed the page. I used the browser console to track each one down.</li>
+      </ul>`
+  },
+  mail: {
+    title: "Mailbox",
+    kicker: "Get in touch",
+    html: `
+      <p>Thanks for exploring my island! I'm looking for roles in operations, project management, and IT, and I'd love to hear from you.</p>
+      <p>I'm based in Southern California and comfortable working remotely, including early East Coast hours.</p>
+      <ul>
+        <li>Email: <a href="mailto:nicolen1006@gmail.com">nicolen1006@gmail.com</a></li>
+        <li>LinkedIn: <a href="https://linkedin.com/in/nicolendai" target="_blank" rel="noopener">linkedin.com/in/nicolendai</a></li>
+      </ul>
+            <p><a href="resume.pdf" target="_blank" rel="noopener">View my resume (PDF)</a></p>
+      <p>If you haven't found every place yet, check the counter in the top left. There's more to see!</p>`
+  }
+};
+
+/* ============ SETUP ============ */
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const canvas = document.getElementById('c');
+let renderer;
+try{
+  renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+}catch(e){
+  document.getElementById('loading').textContent = "This browser can't show 3D. Use Quick view to see the portfolio.";
+  document.getElementById('quickBtn').onclick = ()=>openQuick();
+  return;
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+/* ============ BLUE HOUR LIGHTING ============ */
+const FOG = 0xC29BC0;
+scene.background = new THREE.Color(FOG);
+scene.fog = new THREE.Fog(FOG, 48, 125);
+const camera = new THREE.PerspectiveCamera(40, 1, 1, 260);
+
+scene.add(new THREE.HemisphereLight(0xB7B9F0, 0x5A4568, 0.62));
+scene.add(new THREE.AmbientLight(0xFFB6C8, 0.12));
+const sun = new THREE.DirectionalLight(0xD9D4FF, 0.55);
+sun.position.set(-25, 40, 20);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, {left:-40, right:40, top:40, bottom:-40, near:1, far:120});
+sun.shadow.bias = -0.0015;
+sun.shadow.normalBias = 0.05;
+scene.add(sun);
+
+// sky dome: deep indigo at the top, periwinkle, then dusty pink at the horizon
+const sky = new THREE.Mesh(new THREE.SphereGeometry(180,32,16), new THREE.ShaderMaterial({
+  side:THREE.BackSide, depthWrite:false, fog:false,
+  uniforms:{ top:{value:new THREE.Color(0x2A2B5C)}, mid:{value:new THREE.Color(0x6C6AAA)}, bot:{value:new THREE.Color(0xE9A9BC)} },
+  vertexShader:'varying vec3 vP; void main(){ vP=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+  fragmentShader:'uniform vec3 top; uniform vec3 mid; uniform vec3 bot; varying vec3 vP; void main(){ float h=vP.y; vec3 c = h>0.15 ? mix(mid,top,smoothstep(0.15,0.8,h)) : mix(bot,mid,smoothstep(-0.1,0.15,h)); gl_FragColor=vec4(c,1.0); }'
+}));
+scene.add(sky);
+
+// soft glow ("bloom") so lanterns, windows, fireflies, and the waterfall glow
+let composer = null, bloomPass = null;
+if(THREE.EffectComposer && THREE.RenderPass && THREE.UnrealBloomPass){
+  composer = new THREE.EffectComposer(renderer, new THREE.WebGLRenderTarget(innerWidth, innerHeight, {stencilBuffer:true}));
+  composer.addPass(new THREE.RenderPass(scene, camera));
+  bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.45, 0.45, 0.86);
+  composer.addPass(bloomPass);
+}
+
+const mats = {};
+function M(c, opts){
+  const k = c + (opts ? JSON.stringify(opts) : '');
+  if(!mats[k]) mats[k] = new THREE.MeshStandardMaterial(Object.assign({color:c, roughness:.9, metalness:0, flatShading:true}, opts||{}));
+  return mats[k];
+}
+function add(parent, geo, color, x, y, z, opts){
+  const m = new THREE.Mesh(geo, M(color, opts));
+  m.position.set(x||0, y||0, z||0);
+  m.castShadow = true; m.receiveShadow = true;
+  parent.add(m); return m;
+}
+const box = (w,h,d) => new THREE.BoxGeometry(w,h,d);
+const cyl = (rt,rb,h,s) => new THREE.CylinderGeometry(rt,rb,h,s||10);
+const sph = (r,w,h,a,b,c,d) => new THREE.SphereGeometry(r,w||12,h||10,a,b,c,d);
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const rng = mulberry32(1006);
+
+/* ============ PATTERNS (drawn in code) ============ */
+function patternTex(draw, size){
+  const c=document.createElement('canvas'); c.width=c.height=size;
+  draw(c.getContext('2d'), size);
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.magFilter=THREE.NearestFilter; return t;
+}
+function gingham(a,b){ return patternTex((x,s)=>{ x.fillStyle=b; x.fillRect(0,0,s,s); x.fillStyle=a; x.globalAlpha=.5; x.fillRect(0,0,s/2,s); x.fillRect(0,0,s,s/2); x.globalAlpha=1; x.fillRect(0,0,s/2,s/2); },16); }
+const plankTex = patternTex((x,s)=>{
+  for(let i=0;i<4;i++){ x.fillStyle=i%2?'#9A6B4C':'#B07F5D'; x.fillRect(0,i*s/4,s,s/4); x.fillStyle='#6E4A36'; x.fillRect(0,(i+1)*s/4-2,s,2); x.fillRect((i*37+11)%s,i*s/4,2,s/4); }
+},64);
+const pinkGingham = gingham('#E8839B','#FFF4F2');
+function addTex(parent, geo, tex, x,y,z, rx,ry){
+  const t=tex.clone(); t.needsUpdate=true; t.repeat.set(rx||1, ry||1);
+  const m=new THREE.Mesh(geo, new THREE.MeshStandardMaterial({map:t, roughness:.9}));
+  m.position.set(x||0,y||0,z||0); m.castShadow=true; m.receiveShadow=true; parent.add(m); return m;
+}
+
+/* ============ TERRAIN ============ */
+// The island is a grid of square tiles. Each letter is one 4x4 tile:
+//   ~ water    g ground    u upper terrace    ^ stairs (going up toward the top of the map)    w stream on the terrace
+// Rows run from the north edge (top) to the south edge (bottom).
+const T = 4, H = 2.4, N = 16, HALF = N*T/2;
+const MAP = [
+  "~~~~~~~~~~~~~~~~",
+  "~~~uuu~~~~ggg~~~",
+  "~~guuw~~~~gggg~~",
+  "~~gg^~~~~~gggg~~",
+  "~ggggggggggggg~~",
+  "~gggggggggggggg~",
+  "~gggggggggggggg~",
+  "~gggggggggggggg~",
+  "~gggggggggggggg~",
+  "~ggggggggggggg~~",
+  "~~ggggggg~~~~~~~",
+  "~~gggggggggg~~~~",
+  "~~ggggggggggg~~~",
+  "~~~ggggggggg~~~~",
+  "~~~~ggg~ggg~~~~~",
+  "~~~~~~~~~~~~~~~~",
+];
+function cellAt(x,z){ const i=Math.floor((x+HALF)/T), j=Math.floor((z+HALF)/T); if(i<0||j<0||i>=N||j>=N) return '~'; return MAP[j][i]; }
+const colliders = [];
+const decks = [];      // bridges and the dock: walkable strips over water
+const walkables = [];  // surfaces you can tap to walk to
+function onDeck(x,z){
+  for(const d of decks){
+    const vx=d.bx-d.ax, vz=d.bz-d.az, L2=vx*vx+vz*vz;
+    const k=Math.max(0,Math.min(1,((x-d.ax)*vx+(z-d.az)*vz)/L2));
+    if(Math.hypot(x-d.ax-vx*k, z-d.az-vz*k)<d.hw) return true;
+  }
+  return false;
+}
+function heightAt(x,z){
+  const c=cellAt(x,z);
+  if(c==='g') return 0;
+  if(c==='u') return H;
+  if(c==='^'){ const j=Math.floor((z+HALF)/T), z0=-HALF+j*T; return H*Math.max(0,Math.min(1,(z0+T-z)/T)); }
+  if(onDeck(x,z)) return 0;
+  return null;
+}
+function canStand(x,z,curH){
+  const h=heightAt(x,z); if(h===null || Math.abs(h-curH)>.7) return false;
+  for(const [a,b] of [[.3,0],[-.3,0],[0,.3],[0,-.3]]) if(heightAt(x+a,z+b)===null) return false;
+  return true;
+}
+
+// land blocks with striped "cake layer" cliffs, drawn as a few batched meshes
+const GRASS=0x7BAE7C, BANDS=[[0xE7A9A0,.4],[0xF0C9A4,.5],[0xB9806E,.45],[0x8C5E5A,.6]], BOTTOM=-2.3;
+const pieces = {};
+function piece(color,x,y,z,sx,sy,sz){ (pieces[color]=pieces[color]||[]).push([x,y,z,sx,sy,sz]); }
+function column(cx,cz,top,grass){
+  if(grass) piece(GRASS,cx,top-.175,cz,T+.04,.35,T+.04);
+  let y=grass?top-.35:top, k=0;
+  while(y>BOTTOM){ const [c,th]=BANDS[k%BANDS.length], h2=Math.min(th,y-BOTTOM); piece(c,cx,y-h2/2,cz,T-.12,h2,T-.12); y-=h2; k++; }
+}
+const foam = [];
+for(let j=0;j<N;j++) for(let i=0;i<N;i++){
+  const c=MAP[j][i]; if(c==='~') continue;
+  const cx=-HALF+i*T+T/2, cz=-HALF+j*T+T/2;
+  if(c==='g' || c==='^') column(cx,cz,0,true);
+  if(c==='u') column(cx,cz,H,true);
+  if(c==='w'){ column(cx,cz,H-.7,false); piece(GRASS,cx-T/2+.4,H-.35,cz,.8,.7,T); piece(GRASS,cx+T/2-.4,H-.35,cz,.8,.7,T); }
+  [[0,-1],[0,1],[-1,0],[1,0]].forEach(([di,dj])=>{
+    const n=(MAP[j+dj]||'')[i+di]||'~'; if(n!=='~') return;
+    if(dj) foam.push([cx,-.97,cz+dj*(T/2+.18),T+.36,.05,.36]); else foam.push([cx+di*(T/2+.18),-.97,cz,.36,.05,T+.36]);
+  });
+}
+const unitBox = new THREE.BoxGeometry(1,1,1), tmp = new THREE.Object3D();
+function batch(list, mat, shadows){
+  const m=new THREE.InstancedMesh(unitBox, mat, list.length);
+  list.forEach(([x,y,z,sx,sy,sz],n)=>{ tmp.position.set(x,y,z); tmp.scale.set(sx,sy,sz); tmp.rotation.set(0,0,0); tmp.updateMatrix(); m.setMatrixAt(n,tmp.matrix); });
+  m.castShadow=m.receiveShadow=!!shadows; scene.add(m); return m;
+}
+Object.keys(pieces).forEach(c=>{ const m=batch(pieces[c], M(+c), true); if(+c===GRASS) walkables.push(m); });
+batch(foam, new THREE.MeshBasicMaterial({color:0xE6E8FA, transparent:true, opacity:.5}), false);
+
+// the plaza in the middle
+const plaza=add(scene, cyl(5,5,.08,9), 0xB89A86, 0,.03,0); plaza.castShadow=false; walkables.push(plaza);
+
+// stairs up to the lookout
+for(let j=0;j<N;j++) for(let i=0;i<N;i++){
+  if(MAP[j][i]!=='^') continue;
+  const cx=-HALF+i*T+T/2, z0=-HALF+j*T;
+  for(let k=0;k<6;k++){ const h=(k+1)*H/6; const st=add(scene,box(T-.6,h,T/6),0xC9BCCB,cx,h/2,z0+T-(k+.5)*T/6); walkables.push(st); }
+  [-1,1].forEach(sx=>{ const w=add(scene,box(.3,.5,T),0xB5A4B8,cx+sx*(T/2-.15),H/2+.1,z0+T/2); w.rotation.x=Math.atan2(H,T); w.scale.z=1.25; });
+}
+
+// water with little sparkles, like the reference art
+const waterTex = patternTex((x,s)=>{
+  x.fillStyle='#56679F'; x.fillRect(0,0,s,s);
+  const r=mulberry32(7); for(let n=0;n<14;n++){ x.fillStyle=n%3?'rgba(170,190,240,.55)':'rgba(255,230,240,.6)'; x.fillRect(Math.floor(r()*s),Math.floor(r()*s),6+Math.floor(r()*6),2); }
+},64);
+waterTex.repeat.set(90,90);
+const water = new THREE.Mesh(new THREE.PlaneGeometry(400,400), new THREE.MeshStandardMaterial({map:waterTex, roughness:.6, emissive:0x141833}));
+water.rotation.x = -Math.PI/2; water.position.y = -1; water.receiveShadow = true; scene.add(water);
+
+// stream on the terrace and the waterfall into the lake
+const streamTex = waterTex.clone(); streamTex.needsUpdate=true; streamTex.repeat.set(1,1);
+const fallTex = patternTex((x,s)=>{
+  x.clearRect(0,0,s,s); const r=mulberry32(3);
+  for(let n=0;n<26;n++){ x.fillStyle=`rgba(${220+r()*35|0},${230+r()*25|0},255,${.35+r()*.6})`; x.fillRect(Math.floor(r()*s),Math.floor(r()*s),2+Math.floor(r()*3),10+Math.floor(r()*24)); }
+},64);
+fallTex.repeat.set(1,1.5);
+const falls = [];
+for(let j=0;j<N;j++) for(let i=0;i<N;i++){
+  if(MAP[j][i]!=='w') continue;
+  const cx=-HALF+i*T+T/2, cz=-HALF+j*T+T/2;
+  // the stream flows south and spills over the edge of the terrace
+  const st=new THREE.Mesh(new THREE.BoxGeometry(T-1.6,.1,T), new THREE.MeshStandardMaterial({map:streamTex, emissive:0x1A1F40, roughness:.5})); st.position.set(cx,H-.3,cz); scene.add(st);
+  add(scene,new THREE.DodecahedronGeometry(.55,0),0xB9B3C4,cx-.5,H-.1,cz-T/2+.4); add(scene,new THREE.DodecahedronGeometry(.4,0),0xA8A2B8,cx+.6,H-.15,cz-T/2+.3);
+  const hgt=H-.3+1, zf=cz+T/2;
+  const back=new THREE.Mesh(new THREE.PlaneGeometry(T-1.6,hgt), new THREE.MeshStandardMaterial({color:0x6F82C4, emissive:0x1A1F40})); back.position.set(cx,(H-.3-1)/2,zf+.03); scene.add(back);
+  const fall=new THREE.Mesh(new THREE.PlaneGeometry(T-1.6,hgt), new THREE.MeshBasicMaterial({map:fallTex, color:0xDDE6FF, transparent:true, opacity:.9, side:THREE.DoubleSide, depthWrite:false}));
+  fall.position.set(cx,(H-.3-1)/2,zf+.08); scene.add(fall);
+  for(let n=0;n<7;n++){ const f=new THREE.Mesh(sph(.35,8,6), new THREE.MeshBasicMaterial({color:0xF3F0FF, transparent:true, opacity:.75})); f.position.set(cx-1.1+(n%4)*.7,-.95,zf+.45+Math.floor(n/4)*.4); f.scale.y=.35; scene.add(f); falls.push(f); }
+}
+
+// bridges get built automatically wherever a path crosses water
+function buildBridge(ax,az,bx,bz){
+  const L=Math.hypot(bx-ax,bz-az), g=new THREE.Group();
+  g.position.set((ax+bx)/2,0,(az+bz)/2); g.rotation.y=Math.atan2(bx-ax,bz-az); scene.add(g);
+  const deck=addTex(g, box(2.4,.16,L), plankTex, 0,.02,0, 1, Math.max(1,Math.round(L/1.4)));
+  walkables.push(deck);
+  const posts=Math.max(2,Math.round(L/1.3));
+  [-1.15,1.15].forEach(x=>{ add(g,box(.1,.1,L),0x7A5236,x,.8,0); for(let k=0;k<=posts;k++) add(g,box(.13,.8,.13),0x7A5236,x,.45,-L/2+k*L/posts); });
+  [-1,1].forEach(sz=>[-1.2,1.2].forEach(x=>add(g,cyl(.1,.1,1.3,6),0x6E4A36,x,-.6,sz*(L/2-.6))));
+  decks.push({ax,az,bx,bz,hw:1.05});
+}
+
+/* ============ BUILDINGS ============ */
+function roof(g,w,d,color,y,h){
+  const r = (w/2*1.18)*Math.SQRT2;
+  const geo = new THREE.ConeGeometry(r,h,4); geo.rotateY(Math.PI/4);
+  const m = add(g,geo,color,0,y+h/2,0); m.scale.z = d/w; return m;
+}
+function door(g,z,color,x){ add(g,box(1,1.7,.12),color,x||0,.85,z+.03); add(g,sph(.07,6,5),0xE8B84A,(x||0)+.3,.85,z+.12); }
+function win(g,x,y,z,w,h){ add(g,box(w||.9,h||.8,.08),0xFFE9A8,x,y,z,{emissive:0xB07A2A}); }
+
+function buildHome(g){
+  add(g,box(4.4,3,4),0xF4D5C0,0,1.5,0);
+  roof(g,4.4,4,0xC8654F,3,1.8);
+  door(g,2,0x8A5A3B);
+  win(g,-1.35,1.8,2.03); win(g,1.35,1.8,2.03);
+  add(g,box(.6,1.4,.6),0x9C6B55,1.2,4.1,-.8);
+  add(g,box(3,.12,1.2),0xDCC69C,0,.06,2.7).castShadow=false;
+  [[-1.8,0xF7A8B8],[1.8,0xF5D35C]].forEach(([x,c])=>{ add(g,cyl(.3,.24,.4,8),0xB8704F,x,.2,2.5); add(g,sph(.3,8,6),c,x,.55,2.5); });
+  const aw=addTex(g, box(1.8,.08,.9), pinkGingham, 0,2.05,2.35, 3,1.5); aw.rotation.x=.35;
+  [-1.35,1.35].forEach(x=>addTex(g, box(1.05,.28,.1), pinkGingham, x,2.3,2.08, 2,.5));
+}
+let npc = null;
+function buildShop(g){
+  add(g,box(4.4,.3,2.6),0x3A3A3A,0,.15,0);
+  add(g,box(4.2,4.2,2.4),0xF2C230,0,2.4,0);
+  add(g,box(4.4,.8,2.6),0xE0A91C,0,4.9,0);
+  add(g,box(2.4,3,.05),0xFFF6DC,-.75,2.6,1.23);
+  [1.3,2.0,2.7,3.4].forEach((y,row)=>{
+    add(g,box(2.3,.06,.35),0xE0A91C,-.75,y,1.38);
+    const cols=[0xF7A8B8,0xF5D35C,0xB9A4E8,0x9CCB8A,0xF0A585,0xA8D8EA,0xFFFFFF];
+    for(let i=0;i<5;i++) add(g,box(.28,.34,.2),cols[(i+row*2)%cols.length],-1.63+i*.44,y+.2,1.38);
+  });
+  add(g,box(2.6,.12,.4),0xD99A12,-.75,4.1,1.38);
+  add(g,box(2.6,.12,.4),0xD99A12,-.75,1.1,1.38);
+  add(g,box(.12,3.1,.4),0xD99A12,-2.0,2.6,1.38);
+  add(g,box(.12,3.1,.4),0xD99A12,.5,2.6,1.38);
+  add(g,box(2.4,3,.04),0xCFF3FA,-.75,2.6,1.55,{transparent:true,opacity:.28}).castShadow=false;
+  add(g,box(.9,1.2,.06),0x2E3A4A,1.45,3.1,1.23,{emissive:0x2F5D7A});
+  add(g,box(.35,.25,.08),0x333333,1.45,2.2,1.23);
+  add(g,box(1,.45,.08),0x2B2B2B,1.45,1.1,1.23);
+  [-.5,.5].forEach(x=>add(g,sph(.20,10,8),0x2E3A2B,x,4.95,1.32));
+  [-.85,.85].forEach(x=>{ const c=add(g,sph(.13,10,8),0xF4A6A0,x,4.78,1.3); c.scale.z=.4; });
+  [-1.2,1.2].forEach(x=>{
+    add(g,cyl(.05,.05,.8,6),0x7A5236,x,5.7,0);
+    add(g,sph(.14,8,6),0xE05A4E,x,6.15,0,{emissive:0x601810});
+  });
+  npc = new THREE.Group(); npc.position.set(3.2,0,1.6); g.add(npc);
+  const FUR=0x3A3330, CREAM=0xE8C9A0;
+  add(npc,cyl(.15,.17,.4,10),FUR,-.18,.2,0);
+  add(npc,cyl(.15,.17,.4,10),FUR,.18,.2,0);
+  const body=add(npc,sph(.45,14,12),FUR,0,.75,0,{flatShading:false}); body.scale.y=1.1;
+  const belly=add(npc,sph(.3,14,12),CREAM,0,.72,.22,{flatShading:false}); belly.scale.z=.6;
+  add(npc,cyl(.3,.34,.1,14),0xF7C6D0,0,1.12,0);
+  add(npc,sph(.48,16,14),FUR,0,1.55,0,{flatShading:false});
+  [-.34,.34].forEach(x=>{
+    add(npc,sph(.17,12,10),FUR,x,1.95,0,{flatShading:false});
+    const inner=add(npc,sph(.09,10,8),CREAM,x,1.95,.1,{flatShading:false}); inner.scale.z=.5;
+  });
+  const muzzle=add(npc,sph(.2,12,10),CREAM,0,1.45,.4,{flatShading:false}); muzzle.scale.set(1.2,.85,.8);
+  add(npc,sph(.07,8,6),0x2E2420,0,1.52,.56,{flatShading:false});
+  [-.17,.17].forEach(x=>add(npc,sph(.06,8,6),0x2E2420,x,1.65,.43,{flatShading:false}));
+  [-.3,.3].forEach(x=>{ const c=add(npc,sph(.07,8,6),0xF4A6A0,x,1.47,.38,{flatShading:false}); c.scale.z=.4; });
+  const armL=new THREE.Group(); armL.position.set(-.42,1.05,0); armL.rotation.z=-.15; npc.add(armL);
+  add(armL,cyl(.11,.13,.4,8),FUR,0,-.2,0); add(armL,sph(.13,10,8),CREAM,0,-.42,0);
+  const armR=new THREE.Group(); armR.position.set(.42,1.05,0); armR.rotation.z=.15; npc.add(armR);
+  add(armR,cyl(.11,.13,.4,8),FUR,0,-.2,0); add(armR,sph(.13,10,8),CREAM,0,-.42,0);
+  armL.rotation.x=-.6;
+  add(armL,box(.3,.3,.3),0xFFFBF1,0,-.55,.1);
+  add(armL,box(.32,.06,.32),0xF7A8B8,0,-.55,.1);
+  add(armL,box(.06,.32,.32),0xF7A8B8,0,-.55,.1);
+  npc.userData.arm = armR;
+  g.userData.extra = [[3.2,1.6,.6]];
+}
+function buildInstall(g){
+  add(g,box(4.4,.06,4.4),0xC9B28A,0,.03,0).castShadow=false;
+  const blocks=[[-1.3,.3,-1.3,0xF7A8B8],[-.7,.3,-1.3,0xA8D8EA],[-1,.9,-1.3,0xF5D35C],[-1.3,.3,-.7,0x9CCB8A],[-.2,.3,-1.4,0xF0A585],[-1.3,.9,-.7,0xB9A4E8]];
+  blocks.forEach(([x,y,z,c])=>add(g,box(.55,.55,.55),c,x,y,z));
+  [[-2,2],[2,2],[-2,-2],[2,-2],[-2,0],[2,0],[0,-2]].forEach(([x,z])=>{
+    add(g,box(.42,.04,.42),0xF08A3C,x,.02,z);
+    add(g,cyl(.02,.2,.5,8),0xF08A3C,x,.29,z);
+    add(g,cyl(.1,.12,.07,8),0xFFFFFF,x,.3,z);
+  });
+  add(g,box(.8,.2,.8),0x7D7D7D,1.4,.1,-1.4);
+  add(g,box(.35,4,.35),0xF2C230,1.4,2.2,-1.4);
+  add(g,box(.6,.5,.6),0xF2C230,1.4,4.4,-1.4);
+  add(g,box(.4,.3,.05),0xCFF3FA,1.4,4.45,-1.09,{emissive:0x1F3A40});
+  add(g,box(3.8,.2,.25),0xF2C230,.3,4.75,-1.4);
+  add(g,box(.6,.4,.4),0x7D7D7D,2.0,4.5,-1.4);
+  add(g,cyl(.02,.02,1.6,5),0x3A3A3A,-1.2,3.85,-1.4);
+  add(g,box(.4,.4,.4),0xF7A8B8,-1.2,2.85,-1.4);
+  [-1.9,-.7].forEach(x=>add(g,cyl(.06,.06,1.4,6),0x7A5236,x,.7,1.5));
+  add(g,box(1.6,.8,.1),0x7A5236,-1.3,1.25,1.5);
+  const cv=document.createElement('canvas'); cv.width=512; cv.height=256;
+  const cx=cv.getContext('2d');
+  cx.fillStyle='#F6ECD6'; cx.fillRect(0,0,512,256);
+  cx.fillStyle='#5A3B25'; cx.font='bold 76px Fraunces, Georgia, serif'; cx.textAlign='center'; cx.textBaseline='middle';
+  cx.fillText('Coming soon...',256,132);
+  const signFace=new THREE.Mesh(new THREE.PlaneGeometry(1.45,.68),new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(cv),roughness:.9}));
+  signFace.position.set(-1.3,1.25,1.56); g.add(signFace);
+}
+function screenTex(kind){
+  const c=document.createElement('canvas'); c.width=128; c.height=80; const x=c.getContext('2d');
+  if(kind==='sheet'){ x.fillStyle='#EAF2FF'; x.fillRect(0,0,128,80); x.fillStyle='#9DB4E8';
+    for(let i=0;i<=8;i++) x.fillRect(0,i*10,128,1); for(let i=0;i<=4;i++) x.fillRect(i*32,0,1,80);
+    x.fillStyle='#F4A6B8'; [[1,2],[2,5],[3,3]].forEach(([cc,r])=>x.fillRect(cc*32+1,r*10+1,31,9)); }
+  if(kind==='check'){ x.fillStyle='#FFF4F7'; x.fillRect(0,0,128,80); x.fillStyle='#E8839B'; x.fillRect(0,0,128,14);
+    for(let i=0;i<4;i++){ const y=22+i*14; x.strokeStyle='#6E6474'; x.lineWidth=2; x.strokeRect(10,y,9,9);
+      if(i<3){ x.strokeStyle='#4E9A6A'; x.beginPath(); x.moveTo(11,y+5); x.lineTo(14,y+8); x.lineTo(19,y); x.stroke(); }
+      x.fillStyle='#C9BCCB'; x.fillRect(26,y+2,60+((i*23)%30),5); } }
+  if(kind==='board'){ x.fillStyle='#F2FFF6'; x.fillRect(0,0,128,80);
+    ['#BFD7F5','#F4D6A8','#BFE6C9'].forEach((col,i)=>{ x.fillStyle='#DDE8E2'; x.fillRect(6+i*41,6,36,68); x.fillStyle=col;
+      for(let k=0;k<3-i%2;k++) x.fillRect(9+i*41,12+k*16,30,12); }); }
+  const t=new THREE.CanvasTexture(c); t.magFilter=THREE.NearestFilter; return t;
+}
+function buildLab(g){
+  // a brick campus building with a clock tower and an outdoor desk with glowing monitors
+  const brick = patternTex((x,s)=>{ x.fillStyle='#E8D5CC'; x.fillRect(0,0,s,s); x.fillStyle='#B66A5E';
+    for(let r=0;r<4;r++) for(let c=-1;c<2;c++) x.fillRect(c*32+(r%2)*16+1, r*16+1, 30, 14); },64);
+  addTex(g, box(5.4,4.2,4), brick, 0,2.1,0, 4,3);
+  add(g,box(5.6,.3,4.2),0xCFC3C9,0,.15,0);
+  add(g,box(5.7,.25,4.3),0xF3E9DD,0,4.25,0);
+  roof(g,5.4,4,0x5E6FA8,4.35,1.2);
+  // clock tower
+  addTex(g, box(1.4,2.4,1.4), brick, 0,5.5,-.6, 1,2);
+  add(g,box(1.6,.2,1.6),0xF3E9DD,0,6.75,-.6);
+  const cap=new THREE.ConeGeometry(1.1,1.1,4); cap.rotateY(Math.PI/4); add(g,cap,0x5E6FA8,0,7.4,-.6);
+  const cc=document.createElement('canvas'); cc.width=cc.height=64; const k=cc.getContext('2d');
+  k.fillStyle='#FFF6E6'; k.beginPath(); k.arc(32,32,30,0,7); k.fill(); k.strokeStyle='#3A2F45'; k.lineWidth=4; k.stroke();
+  k.lineWidth=4; k.beginPath(); k.moveTo(32,32); k.lineTo(32,12); k.moveTo(32,32); k.lineTo(46,38); k.stroke();
+  const clock=new THREE.Mesh(new THREE.CircleGeometry(.5,24), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cc)})); clock.position.set(0,5.9,.11); g.add(clock);
+  // entrance with columns
+  door(g,2,0x3A4A7A);
+  [-.75,.75].forEach(x=>add(g,cyl(.12,.14,2.2,10),0xF3E9DD,x,1.1,2.45));
+  add(g,box(1.9,.2,.9),0xF3E9DD,0,2.3,2.35);
+  // windows glow upstairs and downstairs
+  [-1.95,-.65,.65,1.95].forEach(x=>win(g,x,3.2,2.03,.7,.8));
+  [-1.95,1.95].forEach(x=>win(g,x,1.4,2.03,.8,.9));
+  // outdoor desk with three glowing monitors
+  const desk=new THREE.Group(); desk.position.set(-1.7,0,3.7); g.add(desk);
+  addTex(desk, box(2.4,.08,.7), plankTex, 0,.78,0, 2,1);
+  [-1.1,1.1].forEach(x=>add(desk,box(.08,.74,.6),0x6E4A36,x,.37,0));
+  [['sheet',-.8,.3],['check',0,0],['board',.8,-.3]].forEach(([k,dx,ry])=>{
+    const m=new THREE.Group(); m.position.set(dx,1.25,-.15); m.rotation.y=ry; desk.add(m);
+    add(m,box(.82,.54,.05),0x2A2230,0,0,0);
+    const sc=new THREE.Mesh(new THREE.PlaneGeometry(.74,.46), new THREE.MeshBasicMaterial({map:screenTex(k)})); sc.position.z=.03; m.add(sc);
+    add(m,box(.06,.3,.06),0x2A2230,0,-.38,-.02);
+  });
+  add(desk,box(.9,.03,.24),0xF7EEDF,0,.83,.15);
+  add(desk,cyl(.06,.05,.12,8),0xF4B6C8,.95,.88,.15);
+  // desk chair
+  add(desk,box(.55,.08,.5),0x5E6FA8,0,.5,.75);
+  add(desk,box(.55,.5,.08),0x5E6FA8,0,.8,1.0);
+  add(desk,cyl(.04,.04,.45,6),0x3A2F45,0,.25,.75);
+  g.userData.extra = [[-1.7,3.9,1.3]];
+}
+function buildRetreat(g){
+  // a little botanical garden for the team retreat
+  add(g,box(5.4,.05,5.4),0x8FC08A,0,.03,0).castShadow=false;
+  add(g,box(5.4,.6,.5),0x4E7A55,0,.3,-2.45);
+  [-2.45,2.45].forEach(x=>add(g,box(.5,.6,5.4),0x4E7A55,x,.3,0));
+  [-1.8,1.8].forEach(x=>add(g,box(1.8,.6,.5),0x4E7A55,x,.3,2.45));
+  // flower arch at the entrance
+  [-.9,.9].forEach(x=>add(g,cyl(.07,.07,2.2,6),0xF3E9DD,x,1.1,2.45));
+  add(g,new THREE.TorusGeometry(.9,.08,6,16,Math.PI),0xF3E9DD,0,2.2,2.45);
+  for(let i=0;i<=8;i++){ const a=i/8*Math.PI; add(g,sph(.13,8,6),i%2?0xF7B8CC:0xFFFFFF,Math.cos(a)*.9,2.2+Math.sin(a)*.9,2.5); }
+  [-.9,.9].forEach(x=>[.6,1.2,1.7].forEach((y,i)=>add(g,sph(.12,8,6),i%2?0xF4B6C8:0x6E9B78,x,y,2.55)));
+  // glass greenhouse
+  const gh=new THREE.Group(); gh.position.set(-1.1,0,-1.1); g.add(gh);
+  add(gh,box(1.8,1.4,1.4),0xCFF3FA,0,.7,0,{transparent:true,opacity:.3}).castShadow=false;
+  const ghr=new THREE.ConeGeometry(1.3,.7,4); ghr.rotateY(Math.PI/4); const r=add(gh,ghr,0xCFF3FA,0,1.75,0,{transparent:true,opacity:.35}); r.scale.z=.78; r.castShadow=false;
+  [[-.9,-.7],[.9,-.7],[-.9,.7],[.9,.7]].forEach(([x,z])=>add(gh,box(.06,1.4,.06),0xF3E9DD,x,.7,z));
+  [[-.45,0],[.4,.2],[0,-.3]].forEach(([x,z])=>add(gh,new THREE.IcosahedronGeometry(.3,0),0x5E8C5A,x,.35,z));
+  // raised flower beds
+  [-1.4,-.1].forEach(z=>{ addTex(g, box(1.3,.3,.6), plankTex, 1.35,.15,z, 1,1);
+    for(let i=0;i<5;i++) add(g,sph(.12,8,6),[0xF7A8B8,0xF5D35C,0xB9A4E8,0xFFFFFF,0xF0A585][i],1.35-.5+i*.25,.38,z+(i%2?.12:-.12)); });
+  // picnic table with white elephant gifts
+  addTex(g, box(1.3,.08,.7), plankTex, 1.15,.62,1.25, 1,1);
+  [-.5,.5].forEach(x=>add(g,box(.08,.6,.6),0x6E4A36,1.15+x,.3,1.25));
+  [[.85,0xF7A8B8,0xFFFFFF],[1.4,0x9DB4E8,0xF5D35C]].forEach(([x,c1,c2])=>{ add(g,box(.3,.26,.3),c1,x,.79,1.25); add(g,box(.32,.05,.32),c2,x,.8,1.25); add(g,box(.05,.28,.32),c2,x,.79,1.25); });
+  // mini golf hole
+  add(g,cyl(.75,.75,.04,20),0xA8D49A,-1.2,.07,1.15).castShadow=false;
+  add(g,cyl(.1,.1,.05,10),0x2E3A2B,-1.0,.08,1.2).castShadow=false;
+  add(g,cyl(.025,.025,1,5),0xFFFFFF,-1.0,.55,1.2);
+  add(g,box(.35,.2,.02),0xF4B6C8,-.82,.95,1.2);
+  add(g,sph(.06,8,6),0xFFFFFF,-1.45,.11,.95);
+}
+function buildOffice(g){
+  // a pastel apartment building with a row of storage units, for tenant and storage insurance
+  const ax=-1.65;
+  add(g,box(3.4,5.4,3),0xE3A493,ax,2.7,0);
+  add(g,box(3.6,.3,3.2),0xE6D6C4,ax,5.5,0);
+  add(g,box(3.6,.2,3.2),0xE6D6C4,ax,1.85,0);
+  add(g,box(3.6,.2,3.2),0xE6D6C4,ax,3.65,0);
+  door(g,1.5,0x5E6FA8,ax+.6);
+  const aw=addTex(g, box(1.4,.08,.7), gingham('#E86F5A','#FFF4F2'), ax+.6,2.0,1.75, 3,1.5); aw.rotation.x=.3;
+  win(g,ax-.8,1.0,1.53,.8,.8);
+  [2.75,4.55].forEach(y=>[-.8,.8].forEach(dx=>win(g,ax+dx,y,1.53,.8,.9)));
+  // balconies with flower pots
+  [2.2,4.0].forEach(y=>{ add(g,box(1.1,.08,.55),0xF7EEDF,ax+.8,y,1.78);
+    [-.5,.5].forEach(d=>add(g,box(.05,.4,.05),0xF7EEDF,ax+.8+d,y+.24,2.02)); add(g,box(1.1,.05,.05),0xF7EEDF,ax+.8,y+.44,2.02);
+    add(g,cyl(.12,.1,.18,8),0xB8704F,ax+.6,y+.13,1.7); add(g,sph(.14,8,6),0xF4B6C8,ax+.6,y+.3,1.7); });
+  // wall of little mailboxes by the door
+  add(g,box(.7,.6,.12),0xCFC3C9,ax-.2,1.0,1.56);
+  for(let i=0;i<6;i++) add(g,box(.2,.16,.04),0x9AA5AD,ax-.42+(i%3)*.22,.88+Math.floor(i/3)*.22,1.63);
+  // an early bird on the roof, for those 7am starts
+  const bird=new THREE.Group(); bird.position.set(ax-1.0,5.72,1.3); g.add(bird);
+  add(bird,sph(.16,10,8),0xF5D35C,0,.12,0); add(bird,sph(.11,10,8),0xF5D35C,0,.3,.08);
+  add(bird,new THREE.ConeGeometry(.04,.12,6),0xE86F5A,0,.3,.22).rotation.x=Math.PI/2;
+  [-.05,.05].forEach(x=>add(bird,sph(.02,6,4),0x2A2230,x,.33,.17));
+  // storage units with roll-up doors
+  add(g,box(3.35,2.1,2.9),0xC9B8C8,1.7,1.05,0);
+  add(g,box(3.5,.18,3.0),0xE6D6C4,1.7,2.17,0);
+  [['#E86F5A',.6,false],['#8FB08A',1.7,true],['#7C8FD0',2.8,false]].forEach(([c,x,open])=>{
+    const tex=patternTex((t,s)=>{ t.fillStyle=c; t.fillRect(0,0,s,s); t.fillStyle='rgba(0,0,0,.14)'; for(let i=0;i<8;i++) t.fillRect(0,i*8+5,s,2); },64);
+    if(open){
+      add(g,box(.9,1.6,.04),0x2B2546,x,.82,1.44);
+      addTex(g, box(.9,.7,.06), tex, x,1.27,1.48, 1,.5);
+      [[-.18,.25,0xC9A27A],[.2,.22,0xD8B48A],[0,.62,0xC9A27A]].forEach(([dx,y,bc])=>add(g,box(.32,.3,.3),bc,x+dx,y,1.3));
+    } else addTex(g, box(.9,1.6,.06), tex, x,.82,1.48, 1,1);
+    add(g,box(.92,.08,.08),0x6E6474,x,1.66,1.5);
+  });
+  // sign on top of the storage units
+  const sc=document.createElement('canvas'); sc.width=320; sc.height=96; const k=sc.getContext('2d');
+  k.fillStyle='#F7EEDF'; k.fillRect(0,0,320,96);
+  k.fillStyle='#E86F5A'; k.beginPath(); k.arc(48,52,30,Math.PI,0); k.fill();
+  k.strokeStyle='#3A2F45'; k.lineWidth=4; k.beginPath(); k.moveTo(48,22); k.lineTo(48,74); k.arc(42,74,6,0,Math.PI); k.stroke();
+  k.fillStyle='#3A2F45'; k.font='600 30px Fraunces, Georgia, serif'; k.textBaseline='middle';
+  k.fillText('Tenant &',96,34); k.fillText('Storage',96,68);
+  add(g,box(2.2,.72,.1),0x6E4A36,1.7,2.7,.9);
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(2.08,.62), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sc)})); sign.position.set(1.7,2.7,.96); g.add(sign);
+  [.9,2.5].forEach(x=>add(g,box(.06,.4,.06),0x6E4A36,x,2.35,.9));
+}
+function buildSchool(g){
+  // an open-air club meeting space on a wooden deck
+  addTex(g, box(6.2,.24,4.8), plankTex, 0,.12,0, 4,3);
+  // sign held up by two posts at the back
+  [-2.9,2.9].forEach(x=>add(g,cyl(.1,.12,3.9,8),0x6E4A36,x,2.0,-2.2));
+  const sc=document.createElement('canvas'); sc.width=512; sc.height=96; const k=sc.getContext('2d');
+  k.fillStyle='#3A2F45'; k.fillRect(0,0,512,96); k.fillStyle='#F7EEDF'; k.font='600 40px Fraunces, Georgia, serif';
+  k.textAlign='center'; k.textBaseline='middle'; k.fillText('Highlander Business Society',256,50);
+  add(g,box(3.8,.66,.12),0x6E4A36,0,3.7,-2.2);
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(3.65,.54), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sc)})); sign.position.set(0,3.7,-2.13); g.add(sign);
+  // pennant banner strung between the posts
+  add(g,box(5.8,.02,.02),0xF3E9DD,0,3.15,-2.2);
+  for(let i=0;i<9;i++){ const m=add(g,new THREE.ConeGeometry(.12,.3,3),[0xE86F5A,0xF5D35C,0x9DB4E8,0x8FB08A][i%4],-2.6+i*.65,3.0,-2.2); m.rotation.z=Math.PI; }
+  // presentation screen on a stand
+  const pc=document.createElement('canvas'); pc.width=192; pc.height=112; const p=pc.getContext('2d');
+  p.fillStyle='#FFF8F4'; p.fillRect(0,0,192,112); p.fillStyle='#E86F5A'; p.fillRect(0,0,192,24);
+  p.fillStyle='#FFF8F4'; p.font='600 15px Fraunces, Georgia, serif'; p.fillText('Week 4: Public Speaking',10,17);
+  [[30,40],[70,58],[110,72],[150,86]].forEach(([x,h],i)=>{ p.fillStyle=['#9DB4E8','#8FB08A','#F4B6C8','#F5D35C'][i]; p.fillRect(x,100-h,26,h); });
+  [-1.05,1.05].forEach(x=>add(g,cyl(.04,.04,2.1,6),0x2A2230,-.3+x,1.28,-1.75));
+  add(g,box(2.3,1.35,.06),0x2A2230,-.3,2.05,-1.75);
+  const slide=new THREE.Mesh(new THREE.PlaneGeometry(2.15,1.22), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(pc)})); slide.position.set(-.3,2.05,-1.71); g.add(slide);
+  // rug, table, and chairs
+  addTex(g, box(3.8,.02,2.5), gingham('#8FB08A','#F4F2E6'), -.3,.25,.4, 5,3);
+  addTex(g, box(2.6,.1,1.1), plankTex, -.3,.95,.4, 2,1);
+  [[-1.4,-.25],[.8,-.25],[-1.4,.65],[.8,.65]].forEach(([x,z])=>add(g,box(.1,.7,.1),0x6E4A36,-.3+x+.55,.6,z+.2));
+  [-1.2,-.3,.6].forEach(x=>[-1,1].forEach(side=>{
+    add(g,box(.5,.08,.45),0xE86F5A,x,.62,.4+side*.85);
+    add(g,box(.5,.55,.08),0xE86F5A,x,.92,.4+side*1.08);
+    add(g,box(.06,.36,.06),0x3A2F45,x,.42,.4+side*.85);
+  }));
+  [[-1.1,0xF7EEDF],[-.3,0xB9D4F0],[.5,0xF4B6C8]].forEach(([x,c])=>add(g,box(.3,.03,.22),c,x,1.02,.4));
+  // whiteboard on an easel with the 6-week plan
+  const wc=document.createElement('canvas'); wc.width=160; wc.height=96; const w=wc.getContext('2d');
+  w.fillStyle='#FFFFFF'; w.fillRect(0,0,160,96); w.font='600 14px Fraunces, Georgia, serif';
+  for(let i=0;i<6;i++){ const x=8+(i%3)*50, y=10+Math.floor(i/3)*42; w.strokeStyle='#5E6FA8'; w.lineWidth=2; w.strokeRect(x,y,44,34); w.fillStyle='#3A2F45'; w.fillText('Wk '+(i+1),x+6,y+21); }
+  const easel=new THREE.Group(); easel.position.set(2.2,.24,-1.0); easel.rotation.y=-.6; g.add(easel);
+  [-.6,.6].forEach(x=>{ const l=add(easel,cyl(.035,.035,2.2,5),0x6E4A36,x,1.05,0); l.rotation.x=-.08; });
+  add(easel,cyl(.035,.035,2.0,5),0x6E4A36,0,.95,-.35).rotation.x=.35;
+  add(easel,box(1.8,1.1,.05),0xCFC3C9,0,1.45,.06);
+  const wb=new THREE.Mesh(new THREE.PlaneGeometry(1.7,1.0), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(wc)})); wb.position.set(0,1.45,.09); easel.add(wb);
+  // podium with a microphone
+  addTex(g, box(.6,1.0,.5), plankTex, 2.2,.74,1.4, 1,1);
+  add(g,cyl(.02,.02,.35,5),0x3A2F45,2.2,1.4,1.3); add(g,sph(.06,8,6),0x3A2F45,2.2,1.58,1.35);
+  // floor lamp and a potted plant
+  add(g,cyl(.03,.03,1.5,6),0x3A2F45,-2.5,.95,-1.6);
+  add(g,new THREE.ConeGeometry(.28,.3,12),0xFFD29A,-2.5,1.75,-1.6,{emissive:0xD08040});
+  add(g,cyl(.25,.2,.4,8),0xB8704F,-2.6,.44,1.9); add(g,new THREE.IcosahedronGeometry(.4,0),0x4E6B4A,-2.6,.95,1.9);
+}
+function buildBoard(g){
+  [-1.3,1.3].forEach(x=>add(g,cyl(.12,.12,2.8,6),0x7A5236,x,1.4,0));
+  add(g,box(3,1.8,.15),0xB98A5E,0,1.9,0);
+  add(g,box(3.3,.15,.5),0x7A5236,0,2.9,0);
+  [[-.9,2.2,0xFFFFFF],[0,2.3,0xF5D35C],[.9,2.1,0xA8D8EA],[-.5,1.5,0xF7A8B8],[.6,1.45,0xFFFFFF]].forEach(([x,y,c])=>add(g,box(.7,.55,.02),c,x,y,.09));
+}
+function buildMail(g){
+  add(g,cyl(.1,.1,1.2,6),0x7A5236,0,.6,0);
+  add(g,box(.7,.5,.9),0x5B9BD5,0,1.45,0);
+  const top = add(g,cyl(.35,.35,.9,12,),0x5B9BD5,0,1.7,0); top.rotation.x = Math.PI/2;
+  add(g,box(.05,.4,.12),0xE05A4E,.4,1.8,-.2);
+}
+
+const LOCS = [
+  {id:'home',  name:'Home',          x:-14, z:-11, r:3.3, top:5.6, build:buildHome},
+  {id:'shop',  name:'RoboShop',      x:13,  z:-12, r:3.3, top:6.3, build:buildShop},
+  {id:'install', name:'Install Site', x:21.4, z:-12.3, r:2.2, top:4.8, build:buildInstall, path:false},
+  {id:'lab',   name:'Ticket Tower',      x:19,  z:4,   r:3.5, top:7.8, build:buildLab, rot:-0.785},
+  {id:'retreat', name:'Retreat Garden', x:24, z:-2, r:3, top:3.4, build:buildRetreat, path:false, rot:-0.785},  
+  {id:'office',name:'Coverage Corner', x:12,  z:18,  r:3.7, top:6.4, build:buildOffice, rot:-0.785},
+  {id:'school',name:'Club Room',     x:-11, z:16,  r:3.8, top:4.4, build:buildSchool, rot:0.785},
+  {id:'board', name:'Bulletin Board',x:-19, z:2,   r:1.8, top:3.8, build:buildBoard},
+  {id:'mail',  name:'Mailbox',       x:3,   z:-7,  r:.7,  top:2.8, build:buildMail},
+];
+const clickables = [];
+LOCS.forEach(loc=>{
+  const g = new THREE.Group();
+  g.position.set(loc.x,0,loc.z);
+  const d = Math.hypot(loc.x,loc.z), dx = loc.rot!==undefined ? Math.sin(loc.rot) : -loc.x/d, dz = loc.rot!==undefined ? Math.cos(loc.rot) : -loc.z/d;
+  g.rotation.y = Math.atan2(dx,dz);
+  loc.build(g);
+  scene.add(g);
+  g.userData.loc = loc; clickables.push(g);
+  loc.front = new THREE.Vector3(loc.x+dx*(loc.r+1.6), 0, loc.z+dz*(loc.r+1.6));
+  colliders.push({x:loc.x, z:loc.z, r:loc.r});
+  (g.userData.extra||[]).forEach(([lx,lz,r])=>{
+    const p = g.localToWorld(new THREE.Vector3(lx,0,lz)); colliders.push({x:p.x, z:p.z, r});
+  });
+  // path from plaza
+  const len = Math.hypot(loc.front.x, loc.front.z) - 4;
+  if(len>0 && loc.path!==false){
+    const fl=Math.hypot(loc.front.x,loc.front.z), dx=-loc.front.x/fl, dz=-loc.front.z/fl;
+    const sr = mulberry32(Math.round(loc.x*100+loc.z*10));
+    const px=-dz, pz=dx;
+    // find where the path crosses water, and put a bridge there
+    const runs=[]; let inW=false, s0=0;
+    for(let dd=4; dd<=4+len; dd+=.25){ const w=cellAt(-dx*dd,-dz*dd)==='~'; if(w&&!inW){ inW=true; s0=dd; } if(!w&&inW){ inW=false; runs.push([s0,dd]); } }
+    if(inW) runs.push([s0,4+len]);
+    runs.forEach(([ra,rb])=>buildBridge(-dx*(ra-1),-dz*(ra-1),-dx*(rb+1),-dz*(rb+1)));
+    for(let dist=5; dist<4+len; dist+=1.35){
+      if(runs.some(([ra,rb])=>dist>ra-1.6 && dist<rb+1.6)) continue;
+      const off=(sr()-.5)*.6, sx=-dx*dist+px*off, sz=-dz*dist+pz*off;
+      const st=add(scene, cyl(.5,.56,.12,7), sr()<.5?0xB89A86:0xA3968F, sx, .05, sz);
+      st.scale.set(.85+sr()*.35,1,.75+sr()*.3); st.rotation.y=sr()*Math.PI; st.castShadow=false;
+    }
+  }
+  // marker
+  const mk = new THREE.Mesh(new THREE.OctahedronGeometry(.45,0), new THREE.MeshStandardMaterial({color:0xF5C84C, emissive:0x6B5410, flatShading:true}));
+  mk.position.set(loc.x, loc.top+.9, loc.z); scene.add(mk); loc.marker = mk;
+});
+
+/* ============ LANTERNS ============ */
+const lanternMat = new THREE.MeshStandardMaterial({color:0xFFD29A, emissive:0xFF9A40, emissiveIntensity:1, flatShading:true});
+const glowMat = new THREE.MeshBasicMaterial({color:0xFFB870, transparent:true, opacity:.12, depthWrite:false, blending:THREE.AdditiveBlending});
+function lantern(x,z){
+  const g=new THREE.Group(); g.position.set(x,0,z); scene.add(g);
+  add(g,cyl(.07,.09,1.5,6),0x4E3629,0,.75,0);
+  add(g,cyl(.13,.13,.06,10),0x4E3629,0,1.47,0);
+  const shade=new THREE.Mesh(sph(.24,12,10),lanternMat); shade.position.y=1.72; shade.scale.y=1.1; g.add(shade);
+  add(g,cyl(.13,.13,.06,10),0x4E3629,0,1.99,0);
+  const pool=new THREE.Mesh(new THREE.CircleGeometry(1.4,24),glowMat); pool.rotation.x=-Math.PI/2; pool.position.y=.07; g.add(pool);
+  colliders.push({x,z,r:.25});
+}
+LOCS.forEach(loc=>{
+  if(loc.path===false) return;
+  const len=Math.hypot(loc.front.x,loc.front.z), ux=loc.front.x/len, uz=loc.front.z/len;
+  let side=1;
+  for(let d=6; d<len-1; d+=5){ const lx=ux*d-uz*1.7*side, lz=uz*d+ux*1.7*side; if(cellAt(lx,lz)==='g' && !onDeck(lx,lz) && !LOCS.some(o=>Math.hypot(lx-o.x,lz-o.z)<o.r+.8)) lantern(lx,lz); side=-side; }
+});
+
+
+// golf green (hobby decor)
+
+const golf = new THREE.Group(); golf.position.set(-24,0,-3); scene.add(golf);
+add(golf,cyl(2.4,2.4,.05,24),0xA6D683,0,.04,0).castShadow=false;
+add(golf,cyl(.2,.2,.06,12),0x2E3A2B,.4,.07,.3).castShadow=false;
+add(golf,cyl(.04,.04,2.2,5),0xFFFFFF,.4,1.1,.3);
+const flagGeo = new THREE.BufferGeometry();
+flagGeo.setAttribute('position', new THREE.Float32BufferAttribute([0,0,0, 0,-.5,0, .8,-.25,0],3)); flagGeo.computeVertexNormals();
+const flag = new THREE.Mesh(flagGeo, new THREE.MeshStandardMaterial({color:0xF7A8B8, side:THREE.DoubleSide})); flag.position.set(.44,2.15,.3); golf.add(flag);
+add(golf,sph(.1,8,6),0xFFFFFF,-.8,.1,-.6);
+colliders.push({x:-23.6,z:-2.7,r:.2});
+
+/* ============ NATURE ============ */
+function distSeg(px,pz,bx,bz){ const t=Math.max(0,Math.min(1,(px*bx+pz*bz)/(bx*bx+bz*bz))); return Math.hypot(px-bx*t,pz-bz*t); }
+function landInterior(x,z,m){ for(const [a,b] of [[0,0],[m,0],[-m,0],[0,m],[0,-m],[m,m],[-m,-m],[m,-m],[-m,m]]) if(cellAt(x+a,z+b)!=='g') return false; return true; }
+function clearSpot(x,z,pad){
+  if(Math.hypot(x,z)<7) return false;
+  if(!landInterior(x,z,1)) return false;
+  for(const l of LOCS){ if(Math.hypot(x-l.x,z-l.z)<l.r+pad) return false; if(distSeg(x,z,l.front.x,l.front.z)<2.4) return false; }
+  if(Math.hypot(x+24,z+3)<4) return false;     // golf green
+  for(const h of HOBBY_SPOTS) if(Math.hypot(x-h.x,z-h.z)<h.r+pad*.7) return false;
+  if(x>-4 && x<0 && z>-17 && z<-12) return false; // dock entrance
+  if(x>-17 && x<-9 && z>-17 && z<-13) return false; // bottom of the stairs
+  return true;
+}
+function makeTree(x,y,z,s,bloom){
+  const g=new THREE.Group();
+  add(g,cyl(.22*s,.3*s,1.6*s,7),0x8A5A3B,0,.8*s,0);
+  add(g,new THREE.IcosahedronGeometry(1.25*s,0),bloom?0xF4B6C8:0x4E6B4A,0,2.2*s,0,bloom?{emissive:0x2A1420}:undefined);
+  add(g,new THREE.IcosahedronGeometry(.85*s,0),bloom?0xF9D3DE:0x62805A,.1*s,3*s,.1*s,bloom?{emissive:0x301622}:undefined);
+  g.position.set(x,y,z); g.rotation.y=rng()*6; scene.add(g);
+  colliders.push({x,z,r:.55*s, y});
+}
+/* ============ HOBBY CORNERS (little details, no markers) ============ */
+const HOBBY_SPOTS = [ {x:9.6,z:-19,r:1.8}, {x:-21.5,z:8.5,r:2.6}, {x:-17.5,z:-24,r:1.3} ];
+function hobbyGroup(x,z,rot){ const g=new THREE.Group(); g.position.set(x,heightAt(x,z)||0,z); g.rotation.y=rot; scene.add(g); return g; }
+
+// reading nook by the lake
+{
+  const g=hobbyGroup(9.6,-19,-Math.PI/2);
+  addTex(g, box(1.8,.12,.6), plankTex, 0,.5,0, 1,1);
+  addTex(g, box(1.8,.5,.1), plankTex, 0,.85,-.27, 1,1);
+  [-.8,.8].forEach(x=>add(g,box(.1,.5,.5),0x6E4A36,x,.25,0));
+  addTex(g, box(.7,.04,.55), gingham('#9DB4E8','#F4F2FF'), -.4,.58,.02, 2,2);
+  [[0xE86F5A,0],[0xF5D35C,.09],[0x8FB08A,.18]].forEach(([c,y],i)=>{ add(g,box(.42,.08,.3),c,.55,.6+y,0).rotation.y=i*.2; });
+  add(g,box(.36,.03,.26),0xF7EEDF,0,.58,.12);
+  add(g,box(.5,.5,.5),0x8A5A3B,1.25,.25,.1); add(g,cyl(.07,.06,.14,8),0xF4B6C8,1.25,.57,.1);
+  add(g,cyl(.04,.05,1.6,6),0x3A2F45,-1.2,.8,.1);
+  const shade=new THREE.Mesh(sph(.2,12,10),lanternMat); shade.position.set(-1.2,1.7,.1); g.add(shade);
+  colliders.push({x:9.6,z:-19,r:1.2});
+}
+
+// festival corner with a tiny stage and string lights
+{
+  const g=hobbyGroup(-21.5,8.5,0);
+  addTex(g, box(3.4,.4,2), plankTex, 0,.2,0, 3,2);
+  [-1.6,1.6].forEach(x=>add(g,box(.14,2.8,.14),0x3A2F45,x,1.8,-.85));
+  add(g,box(3.4,.14,.14),0x3A2F45,0,3.2,-.85);
+  [-1.3,1.3].forEach(x=>{ add(g,box(.5,.8,.45),0x2A2230,x,.8,-.5); add(g,cyl(.14,.14,.05,12),0x6E6474,x,.85,-.26).rotation.x=Math.PI/2; });
+  add(g,cyl(.02,.02,1.1,5),0x3A2F45,0,.95,.2); add(g,sph(.06,8,6),0x3A2F45,0,1.52,.2);
+  const cols=[0xE86F5A,0xF5D35C,0x9DB4E8,0x8FB08A,0xF4B6C8];
+  for(let i=0;i<14;i++){ const t=i/13, x=-1.6+t*3.2, y=3.05-Math.sin(t*Math.PI)*.35;
+    add(g,sph(.07,8,6),cols[i%5],x,y,-.78,{emissive:cols[i%5]}).castShadow=false; }
+  for(let i=0;i<10;i++) add(g,sph(.06,8,6),cols[(i+2)%5],-2.4+i*.53,.12+(i%2)*.04,1.35,{emissive:cols[(i+2)%5]}).castShadow=false;
+  colliders.push({x:-21.5,z:8.5,r:2.0});
+}
+
+// a piano and a viola up at the lookout
+{
+  const g=hobbyGroup(-17.5,-24,0);
+  add(g,box(1.3,1.1,.5),0x3A2F45,0,.55,0);
+  add(g,box(1.2,.06,.28),0xF7EEDF,0,.82,.36);
+  for(let i=0;i<5;i++) add(g,box(.06,.04,.16),0x2A2230,-.42+i*.21,.86,.32);
+  add(g,box(.7,.06,.35),0xE86F5A,0,.45,.85); [-.3,.3].forEach(x=>add(g,box(.05,.42,.05),0x3A2F45,x,.21,.85));
+  const v=new THREE.Group(); v.position.set(.95,0,.4); v.rotation.z=.12; g.add(v);
+  add(v,cyl(.02,.02,.5,4),0x3A2F45,0,.25,0);
+  const body=add(v,sph(.17,10,8),0xB8704F,0,.65,0); body.scale.set(1,1.4,.35);
+  add(v,box(.05,.4,.04),0x2A2230,0,1.05,0);
+  add(v,box(.08,.1,.05),0x6E4A36,0,1.28,0);
+  colliders.push({x:-17.5,z:-24,r:1.0,y:H});
+}
+
+
+// fewer trees than before, mostly cherry blossoms
+const trees = [];
+for(let i=0;i<900 && trees.length<16;i++){
+  const x=(rng()-.5)*56, z=(rng()-.5)*56;
+  if(!clearSpot(x,z,3.5) || trees.some(t=>Math.hypot(t.x-x,t.z-z)<3.4)) continue;
+  makeTree(x,0,z,.85+rng()*.4, rng()<.65); trees.push({x,z});
+}
+// the lookout terrace: blossom trees, a bench, and a view of the waterfall
+[[-18.3,-26.6,1.05],[-18.4,-21.7,.9],[-14.2,-27.2,.8]].forEach(([x,z,sc])=>{ makeTree(x,H,z,sc,true); trees.push({x,z}); });
+const bench=new THREE.Group(); bench.position.set(-10.9,H,-26.2); bench.rotation.y=Math.PI/2; scene.add(bench);
+addTex(bench, box(1.9,.12,.6), plankTex, 0,.55,0, 1,1);
+addTex(bench, box(1.9,.5,.1), plankTex, 0,.9,-.28, 1,1);
+addTex(bench, box(1.6,.08,.45), pinkGingham, 0,.64,.02, 4,1);
+[-.8,.8].forEach(x=>add(bench,box(.1,.55,.5),0x6E4A36,x,.27,0));
+colliders.push({x:-10.9,z:-26.2,r:.9});
+// trail sign at the bottom of the stairs
+function woodSign(x,z,rot,text){
+  const g=new THREE.Group(); g.position.set(x,heightAt(x,z)||0,z); g.rotation.y=rot; scene.add(g);
+  add(g,cyl(.07,.07,1.6,6),0x6E4A36,0,.8,0);
+  add(g,box(1.5,.6,.1),0x7A5236,0,1.35,0);
+  const cv=document.createElement('canvas'); cv.width=384; cv.height=160; const cx=cv.getContext('2d');
+  cx.fillStyle='#F7EEDF'; cx.fillRect(0,0,384,160); cx.fillStyle='#3A2F45'; cx.font='600 64px Fraunces, Georgia, serif';
+  cx.textAlign='center'; cx.textBaseline='middle'; cx.fillText(text,192,84);
+  const face=new THREE.Mesh(new THREE.PlaneGeometry(1.38,.5), new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(cv), roughness:.9}));
+  face.position.set(0,1.35,.06); g.add(face);
+  colliders.push({x,z,r:.3});
+}
+woodSign(-10.9,-15.4,-.35,'Lookout');
+// the dock on the lake, with lanterns at the end
+const dock=new THREE.Group(); dock.position.set(-2,0,-18.3); scene.add(dock);
+walkables.push(addTex(dock, box(2.2,.14,5.4), plankTex, 0,0,0, 1,4));
+[[-1,-2],[1,-2],[-1,.4],[1,.4],[-1,2.6],[1,2.6]].forEach(([x,z])=>add(dock,cyl(.1,.1,1.4,6),0x6E4A36,x,-.7,-z));
+decks.push({ax:-2,az:-15.6,bx:-2,bz:-20.8,hw:1.05});
+lantern(-2.9,-20.6); lantern(-1.1,-20.6);
+// bushes, some flowering
+for(let i=0,n=0;i<700 && n<30;i++){
+  const x=(rng()-.5)*56, z=(rng()-.5)*56;
+  if(!clearSpot(x,z,2.5) || trees.some(t=>Math.hypot(t.x-x,t.z-z)<1.6)) continue;
+  const g=new THREE.Group(); g.position.set(x,0,z); scene.add(g);
+  const c = rng()<.35 ? 0xE7A3B8 : 0x4A6648;
+  for(let k=0;k<3;k++) add(g,new THREE.IcosahedronGeometry(.35+rng()*.2,0),c,(rng()-.5)*.6,.3,(rng()-.5)*.6);
+  n++;
+}
+// flowers
+const flowerCols=[0xF7A8B8,0xFFFFFF,0xF5D35C,0xB9A4E8];
+for(let i=0,n=0;i<900 && n<260;i++){
+  const x=(rng()-.5)*56, z=(rng()-.5)*56;
+  if(!clearSpot(x,z,1.5) || trees.some(t=>Math.hypot(t.x-x,t.z-z)<1.2)) continue;
+  const f=add(scene,sph(.13,6,5),flowerCols[n%4],x,.13,z); f.castShadow=false; n++;
+}
+// rocks and reeds along the water's edge
+for(let i=0,n=0;i<1500 && n<22;i++){
+  const x=(rng()-.5)*56, z=(rng()-.5)*56;
+  if(cellAt(x,z)!=='g' || cellAt(x+1.4,z)!=='~' && cellAt(x-1.4,z)!=='~' && cellAt(x,z+1.4)!=='~' && cellAt(x,z-1.4)!=='~') continue;
+  if(onDeck(x,z) || LOCS.some(l=>Math.hypot(x-l.x,z-l.z)<l.r+1)) continue;
+  if(n%2){ const r=add(scene,new THREE.DodecahedronGeometry(.3+rng()*.35,0),0xB9B3C4,x,.15,z); r.rotation.set(rng(),rng(),rng()); }
+  else for(let k=0;k<4;k++){ const h=.6+rng()*.5; const rd=add(scene,cyl(.03,.04,h,4),0x7FA06A,x+(rng()-.5)*.4,h/2,z+(rng()-.5)*.4); rd.rotation.z=(rng()-.5)*.3; }
+  n++;
+}
+// lily pads on the lake
+for(let i=0,n=0;i<400 && n<14;i++){
+  const x=-8+rng()*16, z=-28+rng()*12;
+  if(cellAt(x,z)!=='~' || (x>-3.6 && x<-.4) || (x<-5 && z>-20.5 && z<-15)) continue;
+  const p=add(scene,cyl(.5,.5,.04,10),0x5F8E6A,x,-.96,z); p.castShadow=false;
+  if(n%3===0) add(scene,sph(.14,8,6),0xF7B8CC,x+.15,-.86,z,{emissive:0x3A1A28});
+  n++;
+}
+
+/* ============ PETALS AND FIREFLIES ============ */
+const PETALS = 140;
+const petalMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(.14,.09), new THREE.MeshBasicMaterial({color:0xF9C6D6, side:THREE.DoubleSide, transparent:true, opacity:.9}), PETALS);
+petalMesh.frustumCulled = false; scene.add(petalMesh);
+const petals = [], pm = new THREE.Object3D();
+for(let i=0;i<PETALS;i++) petals.push({x:(Math.random()-.5)*56, y:Math.random()*9, z:(Math.random()-.5)*56, sp:.4+Math.random()*.5, ph:Math.random()*6.28, rot:Math.random()*6.28});
+function updatePetals(dt){
+  petals.forEach((p,i)=>{
+    p.y -= p.sp*dt; p.x += (Math.sin(t*.7+p.ph)*.6+.25)*dt; p.z += Math.cos(t*.5+p.ph)*.4*dt; p.rot += dt*1.5;
+    const floor = heightAt(p.x,p.z); const fl = floor===null ? -1 : floor;
+    if(p.y<fl+.05){ p.y=8+Math.random()*2; p.x=(Math.random()-.5)*56; p.z=(Math.random()-.5)*56; }
+    pm.position.set(p.x,p.y,p.z); pm.rotation.set(p.rot,p.rot*.7,p.ph); pm.updateMatrix(); petalMesh.setMatrixAt(i,pm.matrix);
+  });
+  petalMesh.instanceMatrix.needsUpdate = true;
+}
+const FF = 70, ffPos = new Float32Array(FF*3), ff = [];
+for(let i=0;ff.length<FF && i<2000;i++){
+  const x=(Math.random()-.5)*56, z=(Math.random()-.5)*56, h=heightAt(x,z), lake=cellAt(x,z)==='~' && x>-8 && x<8 && z>-28 && z<-16;
+  if(h===null && !lake) continue;
+  ff.push({x, z, y:(h===null?-.6:h)+.6+Math.random()*1.8, ph:Math.random()*6.28});
+}
+const ffGeo = new THREE.BufferGeometry(); ffGeo.setAttribute('position', new THREE.BufferAttribute(ffPos,3));
+const dotCv = document.createElement('canvas'); dotCv.width = dotCv.height = 64;
+const dc = dotCv.getContext('2d'), gr = dc.createRadialGradient(32,32,0,32,32,32);
+gr.addColorStop(0,'rgba(255,240,190,1)'); gr.addColorStop(.3,'rgba(255,200,120,.6)'); gr.addColorStop(1,'rgba(255,180,100,0)');
+dc.fillStyle = gr; dc.fillRect(0,0,64,64);
+const fireflies = new THREE.Points(ffGeo, new THREE.PointsMaterial({size:.6, map:new THREE.CanvasTexture(dotCv), transparent:true, depthWrite:false, blending:THREE.AdditiveBlending}));
+fireflies.frustumCulled = false; scene.add(fireflies);
+function updateFireflies(){
+  ff.forEach((f,i)=>{ ffPos[i*3]=f.x+Math.sin(t*.6+f.ph)*.8; ffPos[i*3+1]=f.y+Math.sin(t*1.3+f.ph*2)*.3; ffPos[i*3+2]=f.z+Math.cos(t*.5+f.ph)*.8; });
+  ffGeo.attributes.position.needsUpdate = true;
+  fireflies.material.opacity = .75 + Math.sin(t*2)*.2;
+}
+function updateWater(dt){
+  waterTex.offset.x += dt*.012; waterTex.offset.y += dt*.006;
+  streamTex.offset.y -= dt*.6;
+  fallTex.offset.y += dt*1.4;
+  falls.forEach((f,i)=>{ f.scale.setScalar(.9+Math.sin(t*4+i)*.12); f.scale.y=.35; });
+}
+
+/* ============ CHARACTER (original design) ============ */
+const player = new THREE.Group(); scene.add(player);
+const SKIN=0xF6D2B8, HAIR=0x1E1A1C, TOP=0xF7F3EE, SKIRT=0x2A2230, BOOTS=0x1F1B1E, BAG=0x8E8C90;
+function limb(x,y,color,len,rad,endColor,endGeo){
+  const pivot=new THREE.Group(); pivot.position.set(x,y,0); player.add(pivot);
+  add(pivot,cyl(rad,rad,len,8),color,0,-len/2,0);
+  add(pivot,endGeo,endColor,0,-len-.02,0);
+  return pivot;
+}
+// legs with chunky black boots
+const legL=limb(-.15,.58,SKIN,.46,.1,BOOTS,box(.26,.3,.34)), legR=limb(.15,.58,SKIN,.46,.1,BOOTS,box(.26,.3,.34));
+[legL,legR].forEach(l=>{ l.children[1].position.set(0,-.38,.03); add(l,box(.29,.08,.4),0x111014,0,-.5,.04); });
+// white top and black bubble skirt
+add(player,cyl(.29,.34,.5,12),TOP,0,1.05,0);
+add(player,cyl(.33,.33,.06,14),SKIRT,0,.82,0);
+const skirt=add(player,sph(.48,16,12),SKIRT,0,.66,0,{flatShading:false}); skirt.scale.set(1,.55,1);
+// bare arms
+const armL=limb(-.42,1.22,SKIN,.46,.08,SKIN,sph(.09,8,6)), armR=limb(.42,1.22,SKIN,.46,.08,SKIN,sph(.09,8,6));
+armL.rotation.z=-.15; armR.rotation.z=.15;
+// gray shoulder bag
+add(player,box(.36,.24,.14),BAG,-.52,.92,-.06);
+const strap=add(player,box(.04,.62,.04),BAG,-.4,1.22,-.06); strap.rotation.z=-.35;
+// head, face, and long dark hair worn down
+const head = new THREE.Group(); head.position.y=1.78; player.add(head);
+add(head,sph(.55,16,14),SKIN,0,0,0,{flatShading:false});
+add(head,sph(.6,16,12,0,Math.PI*2,0,Math.PI*.5),HAIR,0,.05,0,{flatShading:false}).rotation.x=-.42;
+// curtain bangs, parted in the middle
+[-1,1].forEach(s=>{ const b=add(head,sph(.3,12,10),HAIR,s*.24,.16,.42,{flatShading:false}); b.scale.set(1.1,.55,.45); b.rotation.z=s*-.55; });
+const back = add(head,sph(.6,16,14),HAIR,0,-.1,-.14,{flatShading:false}); back.scale.set(1,1,.78);
+const long = new THREE.Mesh(new THREE.CylinderGeometry(.58,.66,1.0,18,1,true,.65,Math.PI*2-1.3), M(HAIR,{flatShading:false,side:THREE.DoubleSide}));
+long.position.set(0,-.43,-.04); head.add(long);
+[-1,1].forEach(s=>add(head,box(.12,.65,.1),HAIR,s*.43,-.25,.3,{flatShading:false}));
+[-.2,.2].forEach(x=>{ add(head,sph(.07,8,6),0x1E1A1C,x,-.06,.5,{flatShading:false}); const c=add(head,sph(.08,8,6),0xF4A6A0,x*1.6,-.18,.44,{flatShading:false}); c.scale.z=.4; });
+// hair clips and hoop earrings
+[[0xF4B6C8,.24],[0xD9D4E8,.08]].forEach(([c,y])=>{ const clip=add(head,box(.24,.07,.07),c,-.47,y,.36); clip.rotation.z=.5; });
+[-1,1].forEach(s=>{ const hoop=add(head,new THREE.TorusGeometry(.07,.014,6,14),0xD9D4E8,s*.54,-.2,.05); hoop.rotation.y=Math.PI/2; });
+player.traverse(o=>{ if(o.isMesh) o.castShadow=true; });
+player.position.set(0,0,3);
+
+// tap ring
+const ring = new THREE.Mesh(new THREE.RingGeometry(.3,.45,24), new THREE.MeshBasicMaterial({color:0xFFFFFF, transparent:true, opacity:0}));
+ring.rotation.x=-Math.PI/2; ring.position.y=.08; scene.add(ring);
+let ringT = 1;
+
+/* ============ UI ============ */
+const $ = id => document.getElementById(id);
+const overlay=$('overlay'), cardTitle=$('cardTitle'), cardKicker=$('cardKicker'), cardBody=$('cardBody');
+const promptBtn=$('prompt'), promptName=$('promptName'), hint=$('hint'), toast=$('toast');
+let modalOpen=false, lastFocus=null;
+
+let found = new Set();
+try{ const s = localStorage.getItem('nicole-island-found'); if(s) found = new Set(JSON.parse(s)); }catch(e){}
+function saveFound(){ try{ localStorage.setItem('nicole-island-found', JSON.stringify([...found])); }catch(e){} }
+
+const dotsEl=$('dots');
+LOCS.forEach(()=>{ const d=document.createElement('span'); d.className='dot'; dotsEl.appendChild(d); });
+function updateHud(){
+  $('foundText').textContent = `${found.size} of ${LOCS.length} places found`;
+  [...dotsEl.children].forEach((d,i)=>d.classList.toggle('on', found.has(LOCS[i].id)));
+  LOCS.forEach(l=>{
+    const f = found.has(l.id);
+    l.marker.material.color.set(f?0x9CCB8A:0xF5C84C);
+    l.marker.material.emissive.set(f?0x1E3A14:0x6B5410);
+    l.marker.scale.setScalar(f?.65:1);
+    if(l.labelEl) l.labelEl.classList.toggle('found', f);
+  });
+}
+function showToast(t){ toast.textContent=t; toast.classList.add('show'); clearTimeout(showToast.t); showToast.t=setTimeout(()=>toast.classList.remove('show'),3200); }
+
+function openCard(title, kicker, html){
+  lastFocus = document.activeElement;
+  cardTitle.textContent=title; cardKicker.textContent=kicker; cardBody.innerHTML=html; cardBody.scrollTop=0;
+  overlay.hidden=false; modalOpen=true;
+  for(const k in keys) keys[k]=false; target=null; autoOpen=null;
+  $('closeBtn').focus();
+}
+function closeCard(){
+  overlay.hidden=true; modalOpen=false;
+  (lastFocus && lastFocus!==document.body ? lastFocus : canvas).focus();
+}
+$('closeBtn').onclick = closeCard;
+overlay.addEventListener('click', e=>{ if(e.target===overlay) closeCard(); });
+overlay.addEventListener('keydown', e=>{
+  if(e.key==='Escape'){ closeCard(); return; }
+  if(e.key==='Tab'){
+    const f=[...overlay.querySelectorAll('button,a[href]')]; if(!f.length) return;
+    if(e.shiftKey && document.activeElement===f[0]){ e.preventDefault(); f[f.length-1].focus(); }
+    else if(!e.shiftKey && document.activeElement===f[f.length-1]){ e.preventDefault(); f[0].focus(); }
+  }
+});
+
+function openLoc(loc){
+  const c = CONTENT[loc.id];
+  const wasNew = !found.has(loc.id);
+  found.add(loc.id); saveFound(); updateHud();
+  openCard(c.title, c.kicker, c.html);
+  if(wasNew && found.size===LOCS.length) setTimeout(()=>showToast("You found every place on the island!"), 300);
+}
+function openQuick(){
+  const html = LOCS.map(l=>{ const c=CONTENT[l.id]; return `<section class="qv"><h2 class="qv-title">${c.title}</h2><p class="role">${c.kicker}</p>${c.html}</section>`; }).join('');
+  openCard("Everything on the island", "The quick version of Nicole's portfolio", html);
+}
+function openIntro(){
+  openCard("Welcome to Nicole's Island", "Operations, project management, and IT",
+    `<p>I'm Nicole Dai and welcome to my island! Each building on this island holds a piece of my work. Walk around, visit them all, and see how many you can find.</p>
+     <dl class="controls">
+       <dt>Walk</dt><dd>Arrow keys or WASD, or tap anywhere on the island</dd>
+       <dt>Visit</dt><dd>Press E near a building, or tap the building</dd>
+       <dt>In a hurry?</dt><dd>Quick view shows everything as one page</dd>
+     </dl>
+     <div class="actions"><button class="btn primary" id="startBtn">Start exploring</button><button class="btn" id="introQuick">Open quick view</button></div>`);
+  $('startBtn').onclick = closeCard;
+  $('introQuick').onclick = openQuick;
+  $('startBtn').focus();
+}
+$('quickBtn').onclick = openQuick;
+$('helpBtn').onclick = openIntro;
+promptBtn.onclick = ()=>{ if(near) openLoc(near); };
+
+const labelsEl=$('labels');
+LOCS.forEach(l=>{ const d=document.createElement('div'); d.className='label'; d.textContent=l.name; labelsEl.appendChild(d); l.labelEl=d; });
+updateHud();
+
+/* ============ INPUT ============ */
+const keys = {};
+let target=null, autoOpen=null, near=null, hintShown=true;
+const MOVE = ['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'];
+addEventListener('keydown', e=>{
+  if(modalOpen) return;
+  const k = e.key.toLowerCase();
+  if(MOVE.includes(k)){ keys[k]=true; target=null; autoOpen=null; e.preventDefault(); return; }
+  const onButton = document.activeElement && /^(BUTTON|A)$/.test(document.activeElement.tagName) && document.activeElement!==promptBtn;
+  if(k==='e' || ((k==='enter'||k===' ') && !onButton)){ if(near){ e.preventDefault(); openLoc(near); } }
+});
+addEventListener('keyup', e=>{ keys[e.key.toLowerCase()]=false; });
+addEventListener('blur', ()=>{ for(const k in keys) keys[k]=false; });
+
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2(), ground=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+canvas.addEventListener('pointerdown', e=>{
+  if(modalOpen) return;
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(ndc, camera);
+  const hits = ray.intersectObjects(clickables, true);
+  if(hits.length){
+    let o = hits[0].object; while(o && !o.userData.loc) o=o.parent;
+    if(o){ const loc=o.userData.loc; if(near===loc){ openLoc(loc); return; } target=loc.front.clone(); autoOpen=loc; stuck=0; return; }
+  }
+  const surf = ray.intersectObjects(walkables, false);
+  const p = new THREE.Vector3();
+  if(surf.length) p.copy(surf[0].point); else if(!ray.ray.intersectPlane(ground,p)) return;
+  target=p; autoOpen=null; stuck=0; ring.position.set(p.x,p.y+.08,p.z); ringT=0;
+});
+
+/* ============ LOOP ============ */
+const SPEED=7.5, camOffset=new THREE.Vector3(), camLook=new THREE.Vector3();
+let walkPhase=0, stuck=0, facing=0, t=0, groundY=0;
+function resize(){
+  const w=innerWidth, h=innerHeight;
+  renderer.setSize(w,h,false); camera.aspect=w/h;
+  const portrait = w/h < .8;
+  camera.fov = portrait ? 50 : 40;
+  camOffset.set(0, portrait?19:15, portrait?20:17);
+  camera.updateProjectionMatrix();
+  if(composer){ composer.setSize(w,h); composer.setPixelRatio && composer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5)); }
+}
+addEventListener('resize', resize); resize();
+camera.position.copy(player.position).add(camOffset);
+
+function angleLerp(a,b,f){ let d=((b-a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI; return a+d*f; }
+
+function update(dt){
+  const p = player.position;
+  let vx=0, vz=0;
+  if(!modalOpen){
+    if(keys.w||keys.arrowup) vz-=1; if(keys.s||keys.arrowdown) vz+=1;
+    if(keys.a||keys.arrowleft) vx-=1; if(keys.d||keys.arrowright) vx+=1;
+    if(!vx && !vz && target){
+      const dx=target.x-p.x, dz=target.z-p.z, d=Math.hypot(dx,dz);
+      if(d<.3){ target=null; if(autoOpen){ const l=autoOpen; autoOpen=null; openLoc(l); } }
+      else { vx=dx/d; vz=dz/d; }
+    }
+  }
+  const len=Math.hypot(vx,vz), moving=len>0;
+  if(moving){
+    vx/=len; vz/=len;
+    const ox=p.x, oz=p.z, curH=groundY;
+    let nx=ox+vx*SPEED*dt, nz=oz+vz*SPEED*dt;
+    if(!canStand(nx,nz,curH)){ if(canStand(nx,oz,curH)) nz=oz; else if(canStand(ox,nz,curH)) nx=ox; else { nx=ox; nz=oz; } }
+    p.x=nx; p.z=nz;
+    for(const c of colliders){
+      if(c.y!==undefined && Math.abs(c.y-curH)>1) continue;
+      const dx=p.x-c.x, dz=p.z-c.z, d=Math.hypot(dx,dz), m=c.r+.45;
+      if(d<m && d>1e-4){ p.x=c.x+dx/d*m; p.z=c.z+dz/d*m; }
+    }
+    if(!canStand(p.x,p.z,curH)){ p.x=ox; p.z=oz; }
+    const nh=heightAt(p.x,p.z); if(nh!==null) groundY=nh;
+    if(target){
+      const moved=Math.hypot(p.x-ox,p.z-oz);
+      stuck = moved < SPEED*dt*.25 ? stuck+dt : 0;
+      if(stuck>.4){ target=null; if(autoOpen && Math.hypot(p.x-autoOpen.x,p.z-autoOpen.z)<autoOpen.r+3){ const l=autoOpen; autoOpen=null; openLoc(l);} autoOpen=null; stuck=0; }
+    }
+    facing = angleLerp(facing, Math.atan2(vx,vz), Math.min(1,dt*12));
+    player.rotation.y = facing;
+    walkPhase += dt*12;
+    if(hintShown){ hintShown=false; setTimeout(()=>hint.style.opacity='0',1500); }
+  } else {
+    walkPhase *= .85;
+  }
+  const sw = moving ? Math.sin(walkPhase) : 0;
+  legL.rotation.x = sw*.7; legR.rotation.x = -sw*.7;
+  armL.rotation.x = -sw*.6; armR.rotation.x = sw*.6;
+  player.position.y = groundY + (moving ? Math.abs(Math.sin(walkPhase))*.08 : 0);
+  head.rotation.z = moving ? 0 : (reduceMotion?0:Math.sin(t*1.6)*.04);
+
+  // nearest place
+  let best=null, bd=1e9;
+  for(const l of LOCS){ const d=Math.hypot(p.x-l.x,p.z-l.z); if(d<l.r+2.6 && d<bd){ best=l; bd=d; } }
+  if(best!==near){
+    near=best;
+    if(near){ promptName.textContent=near.name; promptBtn.hidden=false; hint.style.opacity='0'; }
+    else promptBtn.hidden=true;
+  }
+ const flick = Math.sin(t*3)*.2 + Math.sin(t*7.3)*.1 + Math.sin(t*13.7)*.05;
+  lanternMat.emissiveIntensity = 1 + flick;
+  glowMat.opacity = .12 + flick*.05;
+  updateWater(dt);
+  if(!reduceMotion){ updatePetals(dt); updateFireflies(); } else if(t<.1){ updateFireflies(); }
+  if(npc){
+    const wp=new THREE.Vector3(); npc.getWorldPosition(wp);
+    const dx=p.x-wp.x, dz=p.z-wp.z, d=Math.hypot(dx,dz);
+    const arm=npc.userData.arm;
+    if(d<6){
+      const want=Math.atan2(dx,dz)-npc.parent.rotation.y;
+      npc.rotation.y=angleLerp(npc.rotation.y,want,Math.min(1,dt*6));
+      arm.rotation.z += ((2.6+Math.sin(t*10)*.35)-arm.rotation.z)*Math.min(1,dt*10);
+    } else {
+      arm.rotation.z += (.15-arm.rotation.z)*Math.min(1,dt*6);
+      npc.rotation.y=angleLerp(npc.rotation.y,0,Math.min(1,dt*3));
+    }
+  }
+  // camera
+  camLook.set(p.x, 1+groundY, p.z);
+  sky.position.copy(camera.position);
+  const want = camLook.clone().add(camOffset);
+  camera.position.lerp(want, Math.min(1, dt*4));
+  camera.lookAt(camera.position.x-camOffset.x, camera.position.y-camOffset.y+1, camera.position.z-camOffset.z);
+
+  // markers
+  LOCS.forEach((l,i)=>{
+    if(!reduceMotion){ l.marker.position.y = l.top+.9+Math.sin(t*2+i)*.18; l.marker.rotation.y += dt*1.2; }
+  });
+
+  // tap ring
+  if(ringT<1){ ringT+=dt*1.6; ring.material.opacity=Math.max(0,1-ringT); ring.scale.setScalar(1+ringT*1.2); }
+
+  // labels
+  const w=innerWidth, h=innerHeight, v=new THREE.Vector3();
+  LOCS.forEach(l=>{
+    v.set(l.x, l.top+1.6, l.z).project(camera);
+    const dist = Math.hypot(p.x-l.x, p.z-l.z);
+    const show = v.z<1 && dist<22;
+    l.labelEl.style.opacity = show ? '1' : '0';
+    if(show) l.labelEl.style.transform = `translate(${(v.x+1)/2*w}px, ${(1-v.y)/2*h}px) translate(-50%,-100%)`;
+  });
+}
+document.querySelectorAll('.label').forEach(el=>{ el.style.left='0'; el.style.top='0'; });
+
+const clock = new THREE.Clock();
+function frame(){
+  const dt = Math.min(clock.getDelta(), .05); t += dt;
+  update(dt);
+  if(composer) composer.render(); else renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+$('loading').remove();
+frame();
+openIntro();
+})();
+</script>
+</body>
+</html>
